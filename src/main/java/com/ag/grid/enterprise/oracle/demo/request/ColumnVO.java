@@ -4,9 +4,13 @@ import java.io.Serializable;
 import java.util.Objects;
 
 public class ColumnVO implements Serializable {
+
     private String id;
+
     private String displayName;
+
     private String field;
+
     private String aggFunc;
 
     public ColumnVO() {
