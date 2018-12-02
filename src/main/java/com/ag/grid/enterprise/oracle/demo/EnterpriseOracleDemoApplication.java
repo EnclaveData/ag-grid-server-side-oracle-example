@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class EnterpriseOracleDemoApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(EnterpriseOracleDemoApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(EnterpriseOracleDemoApplication.class, args);
+    }
 }

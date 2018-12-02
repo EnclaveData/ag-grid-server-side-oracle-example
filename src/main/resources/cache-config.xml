@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<cache-config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xmlns="http://xmlns.oracle.com/coherence/coherence-cache-config"
+              xsi:schemaLocation="http://xmlns.oracle.com/coherence/coherence-cache-config coherence-cache-config.xsd">
+
+    <caching-scheme-mapping>
+        <cache-mapping>
+            <cache-name>Trades</cache-name>
+            <scheme-name>near</scheme-name>
+        </cache-mapping>
+
+    </caching-scheme-mapping>
+
+    <caching-schemes>
+
+        <near-scheme>
+            <scheme-name>near</scheme-name>
+            <front-scheme>
+                <local-scheme>
+                    <scheme-name>LocalMemoryScheme</scheme-name>
+                    <expiry-delay>5m</expiry-delay>
+                </local-scheme>
+            </front-scheme>
+            <back-scheme>
+                <distributed-scheme>
+                    <scheme-ref>distributed-1</scheme-ref>
+                </distributed-scheme>
+            </back-scheme>
+        </near-scheme>
+
+        <distributed-scheme>
+            <scheme-name>distributed-1</scheme-name>
+            <service-name>DistributedCache</service-name>
+            <serializer>java</serializer>
+            <!--<thread-count>4</thread-count>-->
+            <!--<task-hung-threshold>120000</task-hung-threshold>-->
+            <backing-map-scheme>
+                <local-scheme/>
+            </backing-map-scheme>
+            <!--<backing-map-scheme>-->
+                <!--<read-write-backing-map-scheme>-->
+                    <!--<internal-cache-scheme>-->
+                        <!--<local-scheme>-->
+                            <!--<high-units>10000</high-units>-->
+                            <!--<expiry-delay>15m</expiry-delay>-->
+                        <!--</local-scheme>-->
+                    <!--</internal-cache-scheme>-->
+                    <!--<read-only>false</read-only>-->
+                    <!--&lt;!&ndash;<write-delay>5s</write-delay>&ndash;&gt;-->
+                <!--</read-write-backing-map-scheme>-->
+            <!--</backing-map-scheme>-->
+            <autostart>true</autostart>
+        </distributed-scheme>
+
+        <proxy-scheme>
+            <service-name>ExtendTcpProxyService</service-name>
+            <!--<thread-count>5</thread-count>-->
+            <thread-count-max>75</thread-count-max>
+            <thread-count-min>10</thread-count-min>
+            <acceptor-config>
+                <tcp-acceptor>
+                    <local-address>
+                        <address>localhost</address>
+                        <port>33100</port>
+                    </local-address>
+                </tcp-acceptor>
+            </acceptor-config>
+            <autostart>true</autostart>
+        </proxy-scheme>
+
+    </caching-schemes>
+
+</cache-config>

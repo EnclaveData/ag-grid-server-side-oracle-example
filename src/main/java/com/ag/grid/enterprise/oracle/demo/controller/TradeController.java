@@ -25,10 +25,10 @@ public class TradeController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private TradeDao tradeDao;
+    private final TradeDao tradeDao;
 
     @Autowired
-    public TradeController(@Qualifier("tradeDao") TradeDao tradeDao) {
+    public TradeController(@Qualifier("cacheBasedTradeDao") TradeDao tradeDao) {
         this.tradeDao = tradeDao;
     }
 
