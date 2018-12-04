@@ -2,14 +2,14 @@ var columnDefs = [
 
   // these are the row groups, so they are all hidden (they are shown in the group column)
   {headerName: 'Hierarchy', children: [
-      {headerName: 'Product', field: 'PRODUCT', type: 'dimension', rowGroupIndex: 0, hide: true},
-      {headerName: 'Portfolio', field: 'PORTFOLIO', type: 'dimension', rowGroupIndex: 1, hide: true},
-      {headerName: 'Book', field: 'BOOK', type: 'dimension', rowGroupIndex: 2, hide: true},
+      {headerName: 'Product', field: 'product', type: 'dimension', rowGroupIndex: 0, hide: true},
+      {headerName: 'Portfolio', field: 'portfolio', type: 'dimension', rowGroupIndex: 1, hide: true},
+      {headerName: 'Book', field: 'book', type: 'dimension', rowGroupIndex: 2, hide: true},
     ]},
 
   // some string values, that do not get aggregated
   {headerName: 'Attributes', children: [
-    {headerName: 'Trade', field: 'TRADEID', width: 100, type: 'dimension',
+    {headerName: 'Trade', field: 'tradeId', width: 100, type: 'dimension',
       filter: "agNumberColumnFilter",
       filterParams: {
         applyButton: true,
@@ -17,14 +17,14 @@ var columnDefs = [
       }
     },
     {
-      headerName: 'Deal Type', field: 'DEALTYPE', type: 'dimension',
+      headerName: 'Deal Type', field: 'dealType', type: 'dimension',
       filter: 'agSetColumnFilter',
       filterParams: {
         values: ['Financial', 'Physical'],
         newRowsAction: 'keep'
       }
     },
-    {headerName: 'Bid', field: 'BIDTYPE', type: 'dimension', width: 100, filter: 'agSetColumnFilter',
+    {headerName: 'Bid', field: 'bidType', type: 'dimension', width: 100, filter: 'agSetColumnFilter',
       filterParams: {
         values: ['Buy', 'Sell'],
         newRowsAction: 'keep'
@@ -34,13 +34,13 @@ var columnDefs = [
 
   // all the other columns (visible and not grouped)
   {headerName: 'Values', children: [
-    {headerName: 'Current', field: 'CURRENTVALUE', type: 'measure'},
-      {headerName: 'Previous', field: 'PREVIOUSVALUE', type: 'measure'},
-      {headerName: 'PL 1', field: 'PL1', type: 'measure'},
-      {headerName: 'PL 2', field: 'PL2', type: 'measure'},
-      {headerName: 'Gain-DX', field: 'GAINDX', type: 'measure'},
-      {headerName: 'SX / PX', field: 'SXPX', type: 'measure'},
-      {headerName: '99 Out', field: 'X99OUT', type: 'measure'}
+    {headerName: 'Current', field: 'currentValue', type: 'measure'},
+      {headerName: 'Previous', field: 'previousValue', type: 'measure'},
+      {headerName: 'PL 1', field: 'pl1', type: 'measure'},
+      {headerName: 'PL 2', field: 'pl2', type: 'measure'},
+      {headerName: 'Gain-DX', field: 'gainDx', type: 'measure'},
+      {headerName: 'SX / PX', field: 'sxPx', type: 'measure'},
+      {headerName: '99 Out', field: 'x99Out', type: 'measure'}
   ]}
 ];
 
@@ -84,7 +84,7 @@ EnterpriseDatasource.prototype.getRows = function (params) {
   console.log(jsonRequest);
 
   let httpRequest = new XMLHttpRequest();
-  httpRequest.open('POST', 'http://localhost:9090/getRows');
+  httpRequest.open('POST', '/getRows');
   httpRequest.setRequestHeader("Content-type", "application/json");
   httpRequest.send(jsonRequest);
   httpRequest.onreadystatechange = () => {

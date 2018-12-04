@@ -80,7 +80,7 @@ public class CohQueryBuilder {
     }
 
     private static String toProp(String column) {
-        return requireNonNull(COLUMN2PROPERTY.get(column));
+        return requireNonNull(COLUMN2PROPERTY.getOrDefault(column, column));
     }
 
     public String createSql(EnterpriseGetRowsRequest request, String tableName, Map<String, List<String>> pivotValues) {
