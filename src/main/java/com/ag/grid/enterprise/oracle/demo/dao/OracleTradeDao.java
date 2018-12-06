@@ -42,7 +42,7 @@ public class OracleTradeDao implements TradeDao {
         queryBuilder = new OracleSqlQueryBuilder();
     }
 
-    //@PostConstruct
+    @PostConstruct
     private void init() throws SQLException {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
         DataSource dataSource = template.getDataSource();

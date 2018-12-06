@@ -45,6 +45,7 @@ public class TradeController {
 
     @ExceptionHandler({Throwable.class})
     protected ResponseEntity<Object> handleInvalidRequest(RuntimeException e, WebRequest request) {
+        logger.error("Unhandled exception!", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(e.toString());
     }

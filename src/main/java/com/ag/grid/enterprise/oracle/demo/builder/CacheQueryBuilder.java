@@ -22,6 +22,7 @@ import com.tangosol.util.filter.AlwaysFilter;
 import com.tangosol.util.filter.EqualsFilter;
 import com.tangosol.util.filter.InFilter;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,11 +38,11 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
 
 /**
- * Builds Oracle SQL queries from an EnterpriseGetRowsRequest.
+ * Builds Oracle Coherence aggregator and filter from an EnterpriseGetRowsRequest.
  */
 public final class CacheQueryBuilder {
 
-    private static final Map<String, BiFunction<NumberColumnFilter, ValueExtractor, Filter>> filterMap =
+    private static final Map<String, BiFunction<NumberColumnFilter, ValueExtractor, Filter>> numberFilterMap =
             ImmutableMap.<String, BiFunction<NumberColumnFilter, ValueExtractor, Filter>>builder()
                     .put("inRange", Filters::between)
                     .put("equals", Filters::equals)
@@ -63,9 +64,13 @@ public final class CacheQueryBuilder {
 
     private List<String> rowGroupsToInclude;
 
-    private Map<String, List<String>> pivotValues;
-
     private final EnterpriseGetRowsRequest request;
+
+    private List<String> valueColumns;
+
+    private List<String> pivotColumns;
+
+    private List<String> secondaryColumns;
 
     public CacheQueryBuilder(EnterpriseGetRowsRequest request) {
         this.request = requireNonNull(request);
@@ -77,6 +82,33 @@ public final class CacheQueryBuilder {
 
     public boolean isPivot() {
         return request.isPivotMode() && !request.getPivotCols().isEmpty();
+    }
+
+    private List<String> getValueColumns() {
+        if (valueColumns == null) {
+            valueColumns = request.getValueCols()
+                    .stream()
+                    .map(ColumnVO::getField)
+                    .collect(toList());
+        }
+        return valueColumns;
+    }
+
+    private List<String> getPivotColumns() {
+        if (pivotColumns == null) {
+            pivotColumns = request.getPivotCols()
+                    .stream()
+                    .map(ColumnVO::getField)
+                    .collect(toList());
+        }
+        return pivotColumns;
+    }
+
+    public List<String> getSecondaryColumns() {
+        if (secondaryColumns == null) {
+            secondaryColumns = new ArrayList<>();
+        }
+        return secondaryColumns;
     }
 
     public Filter filter() {
@@ -91,41 +123,99 @@ public final class CacheQueryBuilder {
         if (!isGrouping()) {
             throw new IllegalStateException("Not a grouping request!");
         }
-        final ValueExtractor[] extractors = getRowGroupsToInclude()
+        final ValueExtractor[] rows = getRowGroupsToInclude()
                 .stream()
                 .map(group -> new ReflectionExtractor<>(getterFor(group)))
                 .toArray(ValueExtractor[]::new);
-        if (extractors.length < 1) {
+        if (rows.length < 1) {
             throw new IllegalStateException("No row groups!");
         }
-        final InvocableMap.EntryAggregator[] entryAggregators = getGroupEntryAggregators();
-        if (entryAggregators.length < 1) {
+        final InvocableMap.EntryAggregator[] values = getValueAggregators();
+        if (values.length < 1) {
             throw new IllegalStateException("No columns to aggregate!");
         }
-        return GroupAggregator.createInstance(
-                extractors.length > 1
-                        ? new MultiExtractor(extractors)
-                        : extractors[0],
-                entryAggregators.length > 1
-                        ? CompositeAggregator.createInstance(entryAggregators)
-                        : entryAggregators[0]
-        );
+        final GroupAggregator result;
+        if (isPivot()) {
+            result = createPivotAggregator(
+                    rows,
+                    request.getPivotCols()
+                            .stream()
+                            .map(col -> getterFor(col.getField()))
+                            .map(ReflectionExtractor::new)
+                            .toArray(ValueExtractor[]::new),
+                    values
+            );
+        } else {
+            result = GroupAggregator.createInstance(
+                    rows.length > 1
+                            ? new MultiExtractor(rows)
+                            : rows[0],
+                    values.length > 1
+                            ? CompositeAggregator.createInstance(values)
+                            : values[0]
+            );
+        }
+        return result;
     }
 
-    private InvocableMap.EntryAggregator[] getGroupEntryAggregators() {
+    private GroupAggregator createPivotAggregator(ValueExtractor[] rows, ValueExtractor[] columns, InvocableMap.EntryAggregator[] values) {
+        final CompositeAggregator valuesAggregator = CompositeAggregator.createInstance(values);
+
+        InvocableMap.EntryAggregator columnsAndValuesAggregator;
+
+        if (columns.length > 0) {
+            InvocableMap.EntryAggregator columnsAggregator = valuesAggregator;
+
+            // Iterate backwards over any columns wrapping each prior aggregator
+            for (int columnIndex = columns.length - 1; columnIndex > 0; columnIndex--) {
+//                columnsAggregator = CompositeAggregator.createInstance(new InvocableMap.EntryAggregator[]{
+//                        valuesAggregator,
+//                        GroupAggregator.createInstance(columns[columnIndex], columnsAggregator)
+//                });
+                columnsAggregator = GroupAggregator.createInstance(columns[columnIndex], columnsAggregator);
+            }
+
+            // Create a GroupAggregator for column[0]
+            columnsAggregator = GroupAggregator.createInstance(columns[0], columnsAggregator);
+
+            // Combine the columns and values aggregators together
+            columnsAndValuesAggregator = columnsAggregator;
+//            CompositeAggregator.createInstance(
+//                    new InvocableMap.EntryAggregator[]{
+//                            valuesAggregator,
+//                            columnsAggregator
+//                    }
+//            );
+        } else {
+            // We have no columns so the rows will just use the values aggregator
+            columnsAndValuesAggregator = valuesAggregator;
+        }
+
+        InvocableMap.EntryAggregator rowsAggregator = columnsAndValuesAggregator;
+
+        // Iterate backwards over the rows wrapping each prior aggregator
+        for (int rowIndex = rows.length - 1; rowIndex > 0; rowIndex--) {
+            rowsAggregator = GroupAggregator.createInstance(rows[rowIndex], rowsAggregator);
+//            rowsAggregator = CompositeAggregator.createInstance(
+//                    new InvocableMap.EntryAggregator[]{
+//                            columnsAndValuesAggregator,
+//                            GroupAggregator.createInstance(rows[rowIndex], rowsAggregator)
+//                    }
+//            );
+        }
+
+        // Create a GroupAggregator for row[0]
+        return GroupAggregator.createInstance(rows[0], rowsAggregator);
+    }
+
+    private InvocableMap.EntryAggregator[] getValueAggregators() {
         if (!isGrouping()) {
             throw new IllegalStateException("Not a grouping request!");
         }
-        Stream<InvocableMap.EntryAggregator> aggregators;
-        if (isPivot()) {
-            aggregators = Stream.empty();// todo - concat(rowGroupsToInclude.stream(), extractPivotStatements());
-        } else {
-            aggregators = request.getValueCols()
-                    .stream()
-                    .map(col -> aggregatorMap.get(col.getAggFunc()).apply(col.getField()));
-        }
-
-        return aggregators.toArray(InvocableMap.EntryAggregator[]::new);
+        return request.getValueCols()
+                .stream()
+                .map(col -> aggregatorMap.get(col.getAggFunc()).apply(col.getField()))
+                .toArray(InvocableMap.EntryAggregator[]::new);
     }
 
     public List<Map<String, Object>> parseResult(Object result) {
@@ -133,43 +223,82 @@ public final class CacheQueryBuilder {
             throw new NullPointerException("result");
         }
         if (result instanceof Map) {
-            final List<String> keyColumns = getRowGroupsToInclude();
-            final List<String> valueColumns;
+            final Stream<Map<String, Object>> stream;
             if (isPivot()) {
-                throw new UnsupportedOperationException("Not implemented!");
+                stream = ((Map<?, ?>) result).entrySet()
+                        .parallelStream()
+                        .flatMap(this::toRows);
             } else {
-                valueColumns = request.getValueCols()
-                        .stream()
-                        .map(ColumnVO::getField)
-                        .collect(toList());
+                stream = ((Map<?, ?>) result).entrySet()
+                        .parallelStream()
+                        .map(this::toRow);
             }
-            final Map<?, ?> map = (Map<?, ?>) result;
-            return map.entrySet()
-                    .parallelStream()
-                    .map(e -> rowToMap(e, keyColumns, valueColumns))
-                    .collect(toList());
+            return stream.collect(toList());
         } else {
             throw new IllegalStateException("Unsupported result: " + result.getClass());
         }
     }
 
-    private static Map<String, Object> rowToMap(Map.Entry<?, ?> row, List<String> key, List<String> values) {
-        final Map<String, Object> result = new HashMap<>(key.size() + values.size());
-        addTo(result, key, row.getKey());
-        addTo(result, values, row.getValue());
+    private Map<String, Object> toRow(Map.Entry<?, ?> row) {
+        final List<String> keyColumns = getRowGroupsToInclude();
+        final List<String> valueColumns = getValueColumns();
+        final Map<String, Object> result = new HashMap<>(keyColumns.size() + valueColumns.size());
+        addTo(result, keyColumns, row.getKey());
+        addTo(result, valueColumns, row.getValue());
+        return result;
+    }
+
+    private String getColumnName(int index) {
+        final List<String> keys = getRowGroupsToInclude();
+        if (index < keys.size()) {
+            return keys.get(index);
+        }
+        return getPivotColumns().get(index - keys.size());
+    }
+
+    private Stream<Map<String, Object>> toRows(Map.Entry<?, ?> row) {
+        return toRows(0, new Node(null, getColumnName(0), row.getKey()), row.getValue());
+    }
+
+    private static String name(String parentName, String name) {
+        if (parentName != null) {
+            return parentName + "_" + name;
+        }
+        return name;
+    }
+
+    private Stream<Map<String, Object>> toRows(int index, Node node, Object value) {
+        final Stream<Map<String, Object>> result;
+        if (value instanceof Map) {
+            final String name = getColumnName(index + 1);
+            result = ((Map<String, Object>) value).entrySet()
+                    .stream()
+                    .flatMap(e -> toRows(index + 1, new Node(node, name, e.getKey()), e.getValue()));
+        } else {
+            result = Stream.of(emitRow(node, value));
+        }
+        return result;
+    }
+
+    private Map<String, Object> emitRow(Node parent, Object value) {
+        final Map<String, Object> result = new HashMap<>();
+        Node n = parent;
+        while (n != null) {
+            result.put(n.getName(), n.getKey());
+            n = n.getParent();
+        }
+        final List<String> secondaryColumns = getValueColumns().stream().map(col -> parent.getPath() + "_" + col).collect(toList());
+        List<String> list = getSecondaryColumns();
+        if (list.isEmpty()) {
+            list.addAll(secondaryColumns);
+        }
+        addTo(result, secondaryColumns, value);
         return result;
     }
 
     private static void addTo(Map<String, Object> target, List<String> keys, Object values) {
         if (values instanceof List) {
             addTo(target, keys, (List<?>) values);
-            final List<?> valueList = (List<?>) values;
-            if (valueList.size() != keys.size()) {
-                throw new IllegalStateException("Key size mismatch: " + valueList.size() + " <> " + keys.size());
-            }
-            for (int i = 0; i < keys.size(); i++) {
-                target.put(keys.get(i), valueList.get(i));
-            }
         } else if (keys.size() == 1) {
             target.put(keys.get(0), values);
         } else {
@@ -179,21 +308,12 @@ public final class CacheQueryBuilder {
 
     private static void addTo(Map<String, Object> target, List<String> keys, List<?> values) {
         if (values.size() != keys.size()) {
-            throw new IllegalStateException("Key size mismatch: " + values.size() + " <> " + keys.size());
+            throw new IllegalStateException("Size mismatch: got " + values.size() + " values and " + keys.size() + " keys");
         }
         for (int i = 0; i < keys.size(); i++) {
             target.put(keys.get(i), values.get(i));
         }
     }
-
-//    public String createSql(EnterpriseGetRowsRequest request, String tableName, Map<String, List<String>> pivotValues) {
-//        this.pivotValues = pivotValues;
-//        this.rowGroups = getRowGroups();
-//        this.rowGroupsToInclude = getRowGroupsToInclude();
-//        this.isGrouping = rowGroups.size() > request.getGroupKeys().size();
-//
-//        return selectSql() + fromSql(tableName) + whereSql() + groupBySql() + orderBySql();// + limitSql();
-//    }
 
 //    private InvocableMap.EntryAggregator[] getSelectAggregators() {
 //        List<InvocableMap.EntryAggregator> aggregators;
@@ -213,36 +333,6 @@ public final class CacheQueryBuilder {
 //                    .map();
 //        }
 //        return aggregators.toArray(InvocableMap.EntryAggregator[]::new);
-//    }
-
-//    private String selectSql() {
-//        List<String> selectCols;
-//        if (request.isPivotMode() && !request.getPivotCols().isEmpty()) {
-//            selectCols = concat(rowGroupsToInclude.stream(), extractPivotStatements()).collect(toList());
-//        } else {
-//            Stream<String> valueCols = valueColumns.stream()
-//                    .map(valueCol -> valueCol.getAggFunc() + '(' + valueCol.getField() + ") ");// + valueCol.getField());
-//
-//            selectCols = concat(rowGroupsToInclude.stream(), valueCols).collect(toList());
-//        }
-//
-//        return isGrouping ? "SELECT " + join(", ", selectCols) : "SELECT *";
-//    }
-
-//    private String fromSql(String tableName) {
-//        return format(" FROM %s", tableName);
-//    }
-
-//    private String whereSql() {
-//        String whereFilters =
-//                concat(getGroupColumns(), getFilters())
-//                        .collect(joining(" AND "));
-//
-//        return whereFilters.isEmpty() ? "" : format(" WHERE %s", whereFilters);
-//    }
-
-//    private String groupBySql() {
-//        return isGrouping ? " GROUP BY " + join(", ", rowGroupsToInclude) : "";
 //    }
 
     // todo
@@ -267,18 +357,16 @@ public final class CacheQueryBuilder {
 //    }
 
     private Stream<Filter> getFilters() {
-        Function<Map.Entry<String, ColumnFilter>, Filter> applyFilters = entry -> {
+        final Function<Map.Entry<String, ColumnFilter>, Filter> applyFilters = entry -> {
             String columnName = entry.getKey();
             ColumnFilter filter = entry.getValue();
 
             if (filter instanceof SetColumnFilter) {
-                return setFilter().apply(columnName, (SetColumnFilter) filter);
+                return setFilter(columnName, (SetColumnFilter) filter);
             }
-
             if (filter instanceof NumberColumnFilter) {
-                return numberFilter().apply(columnName, (NumberColumnFilter) filter);
+                return numberFilter(columnName, (NumberColumnFilter) filter);
             }
-
             return AlwaysFilter.INSTANCE;
         };
 
@@ -286,58 +374,22 @@ public final class CacheQueryBuilder {
     }
 
     // todo - limited draft code!
-    public static String getterFor(String field) {
+    private static String getterFor(String field) {
         return "get" + Character.toUpperCase(field.charAt(0)) + field.substring(1);
     }
 
-    private BiFunction<String, SetColumnFilter, Filter> setFilter() {
-        return (String columnName, SetColumnFilter filter) ->
-                new InFilter<>(getterFor(columnName),
-                        filter.getValues().isEmpty()
-                                ? Collections.emptySet()
-                                : new HashSet<>(filter.getValues())
-                );
+    private Filter setFilter(String columnName, SetColumnFilter filter) {
+        return new InFilter<>(getterFor(columnName),
+                filter.getValues().isEmpty()
+                        ? Collections.emptySet()
+                        : new HashSet<>(filter.getValues())
+        );
     }
 
-    private BiFunction<String, NumberColumnFilter, Filter> numberFilter() {
-        return (String columnName, NumberColumnFilter filter) ->
-                filterMap.get(filter.getType())
-                        .apply(filter, new ReflectionExtractor<>(getterFor(columnName)));
+    private Filter numberFilter(String columnName, NumberColumnFilter filter) {
+        return numberFilterMap.get(filter.getType())
+                .apply(filter, new ReflectionExtractor<>(getterFor(columnName)));
     }
-
-    // todo
-//    private Stream<String> extractPivotStatements() {
-//
-//        // create pairs of pivot col and pivot value i.e. (DEALTYPE,Financial), (BIDTYPE,Sell)...
-//        List<Set<Pair<String, String>>> pivotPairs = pivotValues.entrySet().stream()
-//                .map(e -> e.getValue().stream()
-//                        .map(pivotValue -> Pair.of(e.getKey(), pivotValue))
-//                        .collect(toCollection(LinkedHashSet::new)))
-//                .collect(toList());
-//
-//        // create a cartesian product of decode statements for all pivot and value columns combinations
-//        // i.e. sum(DECODE(DEALTYPE, 'Financial', DECODE(BIDTYPE, 'Sell', CURRENTVALUE)))
-//        return Sets.cartesianProduct(pivotPairs)
-//                .stream()
-//                .flatMap(pairs -> {
-//                    String pivotColStr = pairs.stream()
-//                            .map(Pair::getRight)
-//                            .collect(joining("_"));
-//
-//                    String decodeStr = pairs.stream()
-//                            .map(pair -> "DECODE(" + pair.getLeft() + ", '" + pair.getRight() + "'")
-//                            .collect(joining(", "));
-//
-//                    String closingBrackets = IntStream
-//                            .range(0, pairs.size() + 1)
-//                            .mapToObj(i -> ")")
-//                            .collect(joining(""));
-//
-//                    return valueColumns.stream()
-//                            .map(valueCol -> valueCol.getAggFunc() + "(" + decodeStr + ", " + valueCol.getField() +
-//                                    closingBrackets + " \"" + pivotColStr + "_" + valueCol.getField() + "\"");
-//                });
-//    }
 
     private List<String> getRowGroupsToInclude() {
         if (rowGroupsToInclude == null) {
@@ -362,8 +414,38 @@ public final class CacheQueryBuilder {
         return rowGroups;
     }
 
-//    private String asString(List<String> l) {
-//        return "(" + l.stream().map(s -> "\'" + s + "\'").collect(joining(", ")) + ")";
-//    }
+}
 
+final class Node {
+
+    private Node parent;
+
+    private final String path;
+
+    private final String name;
+
+    private final Object key;
+
+    String getPath() {
+        return path;
+    }
+
+    public Node getParent() {
+        return parent;
+    }
+
+    String getName() {
+        return name;
+    }
+
+    public Object getKey() {
+        return key;
+    }
+
+    Node(Node parent, String name, Object key) {
+        this.parent = parent;
+        this.name = name;
+        this.key = key;
+        this.path = parent != null && parent.getPath() != null ? parent.getPath() + "_" + name : name;
+    }
 }

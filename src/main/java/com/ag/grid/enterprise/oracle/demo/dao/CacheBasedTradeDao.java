@@ -111,7 +111,7 @@ public class CacheBasedTradeDao implements TradeDao {
         }
 
         // first obtain the pivot values from the DB for the requested pivot columns
-        Map<String, List<String>> pivotValues = Collections.emptyMap();
+        //Map<String, List<String>> pivotValues = Collections.emptyMap();
 //        request.isPivotMode()
 //                ? getPivotValues(request.getPivotCols())
 //                : Collections.emptyMap();
@@ -123,7 +123,13 @@ public class CacheBasedTradeDao implements TradeDao {
         //List<Map<String, Object>> rows = queryForList(sql);
 
         // create response with our results
-        return createResponse(request, rows, pivotValues);
+        //return createResponse(request, rows, pivotValues);
+
+        final int currentLastRow = request.getStartRow() + rows.size();
+        final int lastRow = currentLastRow <= request.getEndRow() ? currentLastRow : -1;
+        //final List<ColumnVO> valueColumns = request.getValueCols();
+
+        return new EnterpriseGetRowsResponse(rows, lastRow, builder.getSecondaryColumns());
     }
 
     private Map<String, List<String>> getPivotValues(List<ColumnVO> pivotCols) {
