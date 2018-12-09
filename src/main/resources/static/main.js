@@ -18,11 +18,14 @@ var columnDefs = [
     },
     {
       headerName: 'Deal Type', field: 'dealType', type: 'dimension',
-      filter: 'agSetColumnFilter',
+      filter: 'agTextColumnFilter',
       filterParams: {
-        values: ['Financial', 'Physical'],
-        newRowsAction: 'keep'
-      }
+          applyButton: true,
+          clearButton: true,
+          defaultOption: "contains",
+          newRowsAction: 'keep',
+          caseSensitive: false,
+        }
     },
     {headerName: 'Bid', field: 'bidType', type: 'dimension', width: 100, filter: 'agSetColumnFilter',
       filterParams: {

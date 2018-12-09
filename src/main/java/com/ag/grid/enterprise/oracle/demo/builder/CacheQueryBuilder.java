@@ -4,7 +4,7 @@ import com.ag.grid.enterprise.oracle.demo.filter.ColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.filter.NumberColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.filter.SetColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
-import com.ag.grid.enterprise.oracle.demo.request.EnterpriseGetRowsRequest;
+import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
 import com.google.common.collect.ImmutableMap;
 import com.tangosol.util.Filter;
 import com.tangosol.util.InvocableMap;
@@ -22,12 +22,13 @@ import com.tangosol.util.filter.AlwaysFilter;
 import com.tangosol.util.filter.EqualsFilter;
 import com.tangosol.util.filter.InFilter;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -64,15 +65,15 @@ public final class CacheQueryBuilder {
 
     private List<String> rowGroupsToInclude;
 
-    private final EnterpriseGetRowsRequest request;
+    private final AgGridGetRowsRequest request;
 
     private List<String> valueColumns;
 
     private List<String> pivotColumns;
 
-    private List<String> secondaryColumns;
+    private Set<String> secondaryColumns;
 
-    public CacheQueryBuilder(EnterpriseGetRowsRequest request) {
+    public CacheQueryBuilder(AgGridGetRowsRequest request) {
         this.request = requireNonNull(request);
     }
 
@@ -104,9 +105,9 @@ public final class CacheQueryBuilder {
         return pivotColumns;
     }
 
-    public List<String> getSecondaryColumns() {
+    public Set<String> getSecondaryColumns() {
         if (secondaryColumns == null) {
-            secondaryColumns = new ArrayList<>();
+            secondaryColumns = new HashSet<>();
         }
         return secondaryColumns;
     }
@@ -227,7 +228,7 @@ public final class CacheQueryBuilder {
             if (isPivot()) {
                 stream = ((Map<?, ?>) result).entrySet()
                         .parallelStream()
-                        .flatMap(this::toRows);
+                        .map(this::toRows);
             } else {
                 stream = ((Map<?, ?>) result).entrySet()
                         .parallelStream()
@@ -256,8 +257,10 @@ public final class CacheQueryBuilder {
         return getPivotColumns().get(index - keys.size());
     }
 
-    private Stream<Map<String, Object>> toRows(Map.Entry<?, ?> row) {
-        return toRows(0, new Node(null, getColumnName(0), row.getKey()), row.getValue());
+    private Map<String, Object> toRows(Map.Entry<?, ?> row) {
+        final Map<String, Object> result = new HashMap<>();
+        append(0, new Node(null, getColumnName(0), row.getKey(), null), row.getValue(), result);
+        return result;
     }
 
     private static String name(String parentName, String name) {
@@ -267,33 +270,35 @@ public final class CacheQueryBuilder {
         return name;
     }
 
-    private Stream<Map<String, Object>> toRows(int index, Node node, Object value) {
-        final Stream<Map<String, Object>> result;
+    private void append(int index, Node node, Object value, Map<String, Object> target) {
         if (value instanceof Map) {
-            final String name = getColumnName(index + 1);
-            result = ((Map<String, Object>) value).entrySet()
-                    .stream()
-                    .flatMap(e -> toRows(index + 1, new Node(node, name, e.getKey()), e.getValue()));
+            final int idx = index + 1;
+            final String name = getColumnName(idx);
+            final Function<Object, String> path;
+            if (idx <= request.getGroupKeys().size()) {
+                path = Objects::toString;
+            } else {
+                path = k -> name(node.getPath(), Objects.toString(k));
+            }
+            ((Map<String, Object>) value).forEach((k, v) ->
+                    append(idx, new Node(node, name, k, path.apply(k)), v, target));
         } else {
-            result = Stream.of(emitRow(node, value));
+            append(node, value, target);
         }
-        return result;
     }
 
-    private Map<String, Object> emitRow(Node parent, Object value) {
-        final Map<String, Object> result = new HashMap<>();
+    private void append(Node parent, Object value, Map<String, Object> target) {
         Node n = parent;
         while (n != null) {
-            result.put(n.getName(), n.getKey());
+            target.put(n.getName(), n.getKey());
             n = n.getParent();
         }
-        final List<String> secondaryColumns = getValueColumns().stream().map(col -> parent.getPath() + "_" + col).collect(toList());
-        List<String> list = getSecondaryColumns();
-        if (list.isEmpty()) {
-            list.addAll(secondaryColumns);
-        }
-        addTo(result, secondaryColumns, value);
-        return result;
+        final List<String> secondaryColumns = getValueColumns()
+                .stream()
+                .map(col -> parent.getPath() + "_" + col)
+                .collect(toList());
+        getSecondaryColumns().addAll(secondaryColumns);
+        addTo(target, secondaryColumns, value);
     }
 
     private static void addTo(Map<String, Object> target, List<String> keys, Object values) {
@@ -442,10 +447,10 @@ final class Node {
         return key;
     }
 
-    Node(Node parent, String name, Object key) {
+    Node(Node parent, String name, Object key, String path) {
         this.parent = parent;
         this.name = name;
         this.key = key;
-        this.path = parent != null && parent.getPath() != null ? parent.getPath() + "_" + name : name;
+        this.path = path;
     }
 }

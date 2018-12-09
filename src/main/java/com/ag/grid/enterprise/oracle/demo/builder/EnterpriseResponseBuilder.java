@@ -1,8 +1,8 @@
 package com.ag.grid.enterprise.oracle.demo.builder;
 
 import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
-import com.ag.grid.enterprise.oracle.demo.request.EnterpriseGetRowsRequest;
-import com.ag.grid.enterprise.oracle.demo.response.EnterpriseGetRowsResponse;
+import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
+import com.ag.grid.enterprise.oracle.demo.response.AgGridGetRowsResponse;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -15,8 +15,8 @@ import static java.util.stream.Collectors.*;
 
 public class EnterpriseResponseBuilder {
 
-    public static EnterpriseGetRowsResponse createResponse(
-            EnterpriseGetRowsRequest request,
+    public static AgGridGetRowsResponse createResponse(
+            AgGridGetRowsRequest request,
             List<Map<String, Object>> rows,
             Map<String, List<String>> pivotValues) {
 
@@ -25,7 +25,7 @@ public class EnterpriseResponseBuilder {
 
         List<ColumnVO> valueColumns = request.getValueCols();
 
-        return new EnterpriseGetRowsResponse(rows, lastRow, getSecondaryColumns(pivotValues, valueColumns));
+        return new AgGridGetRowsResponse(rows, lastRow, getSecondaryColumns(pivotValues, valueColumns));
     }
 
     private static List<String> getSecondaryColumns(Map<String, List<String>> pivotValues, List<ColumnVO> valueColumns) {

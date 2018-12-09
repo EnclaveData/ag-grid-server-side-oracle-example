@@ -4,7 +4,7 @@ import com.ag.grid.enterprise.oracle.demo.filter.ColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.filter.NumberColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.filter.SetColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
-import com.ag.grid.enterprise.oracle.demo.request.EnterpriseGetRowsRequest;
+import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
 import com.ag.grid.enterprise.oracle.demo.request.SortModel;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.tuple.Pair;
@@ -40,7 +40,7 @@ public class OracleSqlQueryBuilder {
     private Map<String, List<String>> pivotValues;
     private boolean isPivotMode;
 
-    public String createSql(EnterpriseGetRowsRequest request, String tableName, Map<String, List<String>> pivotValues) {
+    public String createSql(AgGridGetRowsRequest request, String tableName, Map<String, List<String>> pivotValues) {
         this.valueColumns = request.getValueCols();
         this.pivotColumns = request.getPivotCols();
         this.groupKeys = request.getGroupKeys();
@@ -61,12 +61,14 @@ public class OracleSqlQueryBuilder {
     private String selectSql() {
         List<String> selectCols;
         if (isPivotMode && !pivotColumns.isEmpty()) {
-            selectCols = concat(rowGroupsToInclude.stream(), extractPivotStatements()).collect(toList());
+            selectCols = concat(rowGroupsToInclude.stream(), extractPivotStatements())
+                    .collect(toList());
         } else {
             Stream<String> valueCols = valueColumns.stream()
                     .map(valueCol -> valueCol.getAggFunc() + '(' + valueCol.getField() + ") as " + valueCol.getField());
 
-            selectCols = concat(rowGroupsToInclude.stream(), valueCols).collect(toList());
+            selectCols = concat(rowGroupsToInclude.stream(), valueCols)
+                    .collect(toList());
         }
 
         return isGrouping ? "SELECT " + join(", ", selectCols) : "SELECT *";

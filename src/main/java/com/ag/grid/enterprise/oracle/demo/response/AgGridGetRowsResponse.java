@@ -3,14 +3,18 @@ package com.ag.grid.enterprise.oracle.demo.response;
 import java.util.List;
 import java.util.Map;
 
-public class EnterpriseGetRowsResponse {
+public class AgGridGetRowsResponse {
+
     private List<Map<String, Object>> data;
+
     private int lastRow;
+
     private List<String> secondaryColumnFields;
 
-    public EnterpriseGetRowsResponse() { }
+    public AgGridGetRowsResponse() {
+    }
 
-    public EnterpriseGetRowsResponse(List<Map<String, Object>> data, int lastRow, List<String> secondaryColumnFields) {
+    public AgGridGetRowsResponse(List<Map<String, Object>> data, int lastRow, List<String> secondaryColumnFields) {
         this.data = data;
         this.lastRow = lastRow;
         this.secondaryColumnFields = secondaryColumnFields;

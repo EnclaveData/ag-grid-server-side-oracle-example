@@ -5,7 +5,7 @@ import com.ag.grid.enterprise.oracle.demo.filter.ColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.filter.NumberColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.filter.SetColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
-import com.ag.grid.enterprise.oracle.demo.request.EnterpriseGetRowsRequest;
+import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
 import com.ag.grid.enterprise.oracle.demo.request.SortModel;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -83,7 +83,7 @@ public class CohQueryBuilder {
         return requireNonNull(COLUMN2PROPERTY.getOrDefault(column, column));
     }
 
-    public String createSql(EnterpriseGetRowsRequest request, String tableName, Map<String, List<String>> pivotValues) {
+    public String createSql(AgGridGetRowsRequest request, String tableName, Map<String, List<String>> pivotValues) {
         request.getPivotCols().forEach(c -> c.setField(toProp(c.getField())));
         request.getValueCols().forEach(c -> c.setField(toProp(c.getField())));
         request.getRowGroupCols().forEach(c -> c.setField(toProp(c.getField())));

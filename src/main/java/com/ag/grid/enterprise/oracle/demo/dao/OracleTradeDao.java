@@ -1,9 +1,10 @@
 package com.ag.grid.enterprise.oracle.demo.dao;
 
 import com.ag.grid.enterprise.oracle.demo.builder.OracleSqlQueryBuilder;
+import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
 import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
-import com.ag.grid.enterprise.oracle.demo.request.EnterpriseGetRowsRequest;
-import com.ag.grid.enterprise.oracle.demo.response.EnterpriseGetRowsResponse;
+import com.ag.grid.enterprise.oracle.demo.response.AgGridGetRowsResponse;
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,12 +21,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 import static com.ag.grid.enterprise.oracle.demo.builder.EnterpriseResponseBuilder.createResponse;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
 
-@Repository("oracleTradeDao")
+//@Repository("oracleTradeDao")
 public class OracleTradeDao implements TradeDao {
 
     private static final int PIVOT_VALUES_GLOBAL_LIMIT = 100;
@@ -35,6 +37,25 @@ public class OracleTradeDao implements TradeDao {
     private JdbcTemplate template;
 
     private OracleSqlQueryBuilder queryBuilder;
+
+    private final Map<String, String> fixMap = ImmutableMap.<String, String>builder()
+            .put("PRODUCT", "product")
+            .put("PORTFOLIO", "portfolio")
+            .put("BOOK", "book")
+            .put("TRADEID", "tradeId")
+            .put("SUBMITTERID", "submitterId")
+            .put("SUBMITTERDEALID", "submitterDealId")
+            .put("DEALTYPE", "dealType")
+            .put("BIDTYPE", "bidType")
+            .put("CURRENTVALUE", "currentValue")
+            .put("PREVIOUSVALUE", "previousValue")
+            .put("PL1", "pl1")
+            .put("PL2", "pl2")
+            .put("GAINDX", "gainDx")
+            .put("SXPX", "sxPx")
+            .put("X99OUT", "x99Out")
+            .put("BATCH", "batch")
+            .build();
 
     @Autowired
     public OracleTradeDao(JdbcTemplate template) {
@@ -65,8 +86,8 @@ public class OracleTradeDao implements TradeDao {
                     ps.setInt(4, i);
                     ps.setInt(5, i % 3000);
                     ps.setInt(6, i);
-                    ps.setString(7, "dealType_" + (i % 50));
-                    ps.setString(8, "bidType_" + (i % 250));
+                    ps.setString(7, "dealType_" + (i % 35));
+                    ps.setString(8, rnd.nextBoolean() ? "Buy" : "Sell");
                     ps.setDouble(9, rnd.nextDouble(0, 100_000));
                     ps.setDouble(10, rnd.nextDouble(0, 100_000));
                     ps.setDouble(11, rnd.nextDouble());
@@ -85,7 +106,9 @@ public class OracleTradeDao implements TradeDao {
     }
 
     @Override
-    public EnterpriseGetRowsResponse getData(EnterpriseGetRowsRequest request) {
+    public AgGridGetRowsResponse getData(AgGridGetRowsRequest request) {
+        logger.trace("Request: {}", request);
+
         String tableName = "trade"; // could be supplied in request as a lookup key?
 
         // first obtain the pivot values from the DB for the requested pivot columns
@@ -98,9 +121,18 @@ public class OracleTradeDao implements TradeDao {
 
         // query db for rows
         List<Map<String, Object>> rows = template.queryForList(sql);
+        List<Map<String, Object>> fixed = rows.stream()
+                .map(m ->
+                        m.entrySet()
+                                .stream()
+                                .collect(toMap(
+                                        e -> fixMap.getOrDefault(e.getKey(), e.getKey()),
+                                        Map.Entry::getValue
+                                ))
+                ).collect(Collectors.toList());
 
         // create response with our results
-        return createResponse(request, rows, pivotValues);
+        return createResponse(request, fixed, pivotValues);
     }
 
     private Map<String, List<String>> getPivotValues(List<ColumnVO> pivotCols) {

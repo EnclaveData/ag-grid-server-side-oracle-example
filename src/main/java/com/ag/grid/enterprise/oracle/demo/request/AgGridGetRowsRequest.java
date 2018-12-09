@@ -2,14 +2,13 @@ package com.ag.grid.enterprise.oracle.demo.request;
 
 import com.ag.grid.enterprise.oracle.demo.filter.ColumnFilter;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
-public class EnterpriseGetRowsRequest implements Serializable {
+public class AgGridGetRowsRequest {
 
     private int startRow, endRow;
 
@@ -34,7 +33,7 @@ public class EnterpriseGetRowsRequest implements Serializable {
     // if sorting, what the sort model is
     private List<SortModel> sortModel;
 
-    public EnterpriseGetRowsRequest() {
+    public AgGridGetRowsRequest() {
         this.rowGroupCols = emptyList();
         this.valueCols = emptyList();
         this.pivotCols = emptyList();
@@ -113,5 +112,20 @@ public class EnterpriseGetRowsRequest implements Serializable {
 
     public void setSortModel(List<SortModel> sortModel) {
         this.sortModel = sortModel;
+    }
+
+    @Override
+    public String toString() {
+        return "AgGridGetRowsRequest{" +
+                "startRow=" + startRow +
+                ", endRow=" + endRow +
+                ", rowGroupCols=" + rowGroupCols +
+                ", valueCols=" + valueCols +
+                ", pivotCols=" + pivotCols +
+                ", pivotMode=" + pivotMode +
+                ", groupKeys=" + groupKeys +
+                ", filterModel=" + filterModel +
+                ", sortModel=" + sortModel +
+                '}';
     }
 }

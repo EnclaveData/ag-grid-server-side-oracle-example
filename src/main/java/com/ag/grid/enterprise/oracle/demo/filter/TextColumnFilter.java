@@ -1,17 +1,17 @@
 package com.ag.grid.enterprise.oracle.demo.filter;
 
-public class NumberColumnFilter extends ColumnFilter {
+public class TextColumnFilter extends ColumnFilter {
 
     private String type;
 
-    private Integer filter;
+    private String filter;
 
-    private Integer filterTo;
+    private String filterTo;
 
-    public NumberColumnFilter() {
+    public TextColumnFilter() {
     }
 
-    public NumberColumnFilter(String type, Integer filter, Integer filterTo) {
+    public TextColumnFilter(String type, String filter, String filterTo) {
         this.type = type;
         this.filter = filter;
         this.filterTo = filterTo;
@@ -25,20 +25,20 @@ public class NumberColumnFilter extends ColumnFilter {
         return type;
     }
 
-    public Integer getFilter() {
+    public String getFilter() {
         return filter;
     }
 
-    public Integer getFilterTo() {
+    public String getFilterTo() {
         return filterTo;
     }
 
     @Override
     public String toString() {
-        return "NumberColumnFilter{" +
+        return "TextColumnFilter{" +
                 "type='" + type + '\'' +
-                ", filter=" + filter +
-                ", filterTo=" + filterTo +
+                ", filter='" + filter + '\'' +
+                ", filterTo='" + filterTo + '\'' +
                 '}';
     }
 }

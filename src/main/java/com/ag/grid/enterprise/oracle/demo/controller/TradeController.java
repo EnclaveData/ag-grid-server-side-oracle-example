@@ -1,8 +1,8 @@
 package com.ag.grid.enterprise.oracle.demo.controller;
 
 import com.ag.grid.enterprise.oracle.demo.dao.TradeDao;
-import com.ag.grid.enterprise.oracle.demo.request.EnterpriseGetRowsRequest;
-import com.ag.grid.enterprise.oracle.demo.response.EnterpriseGetRowsResponse;
+import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
+import com.ag.grid.enterprise.oracle.demo.response.AgGridGetRowsResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.WebRequest;
 
+import javax.servlet.http.HttpSession;
 import java.util.concurrent.TimeUnit;
 
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
@@ -28,13 +29,13 @@ public class TradeController {
     private final TradeDao tradeDao;
 
     @Autowired
-    public TradeController(@Qualifier("cacheBasedTradeDao") TradeDao tradeDao) {
+    public TradeController(@Qualifier("inMemoryTradeDao") TradeDao tradeDao) {
         this.tradeDao = tradeDao;
     }
 
     @RequestMapping(method = POST, value = "/getRows")
     @ResponseBody
-    public EnterpriseGetRowsResponse getRows(@RequestBody EnterpriseGetRowsRequest request) {
+    public AgGridGetRowsResponse getRows(@RequestBody AgGridGetRowsRequest request, HttpSession session) {
         final long t0 = System.nanoTime();
         try {
             return tradeDao.getData(request);

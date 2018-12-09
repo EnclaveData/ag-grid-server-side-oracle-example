@@ -5,7 +5,7 @@ import com.ag.grid.enterprise.oracle.demo.filter.ColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.filter.NumberColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.filter.SetColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
-import com.ag.grid.enterprise.oracle.demo.request.EnterpriseGetRowsRequest;
+import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
 import com.ag.grid.enterprise.oracle.demo.request.SortModel;
 import org.junit.Test;
 
@@ -22,7 +22,7 @@ public class OracleSqlQueryBuilderTest {
 
     @Test
     public void singleGroup() {
-        EnterpriseGetRowsRequest request = new EnterpriseGetRowsRequest();
+        AgGridGetRowsRequest request = new AgGridGetRowsRequest();
         request.setStartRow(0);
         request.setEndRow(100);
         request.setRowGroupCols(singletonList(
@@ -43,7 +43,7 @@ public class OracleSqlQueryBuilderTest {
 
     @Test
     public void multipleGroups() {
-        EnterpriseGetRowsRequest request = new EnterpriseGetRowsRequest();
+        AgGridGetRowsRequest request = new AgGridGetRowsRequest();
         request.setStartRow(100);
         request.setEndRow(200);
         request.setRowGroupCols(asList(
@@ -65,7 +65,7 @@ public class OracleSqlQueryBuilderTest {
 
     @Test
     public void twoGroupsWithGroupKey() {
-        EnterpriseGetRowsRequest request = new EnterpriseGetRowsRequest();
+        AgGridGetRowsRequest request = new AgGridGetRowsRequest();
         request.setStartRow(100);
         request.setEndRow(200);
         request.setRowGroupCols(asList(
@@ -89,7 +89,7 @@ public class OracleSqlQueryBuilderTest {
 
     @Test
     public void singleGroupWithFilteringAndSorting() {
-        EnterpriseGetRowsRequest request = new EnterpriseGetRowsRequest();
+        AgGridGetRowsRequest request = new AgGridGetRowsRequest();
         request.setStartRow(0);
         request.setEndRow(100);
         request.setRowGroupCols(singletonList(
@@ -117,7 +117,7 @@ public class OracleSqlQueryBuilderTest {
 
     @Test
     public void pivotModeNoPivotCols() {
-        EnterpriseGetRowsRequest request = new EnterpriseGetRowsRequest();
+        AgGridGetRowsRequest request = new AgGridGetRowsRequest();
         request.setStartRow(0);
         request.setEndRow(100);
         request.setRowGroupCols(singletonList(
@@ -139,7 +139,7 @@ public class OracleSqlQueryBuilderTest {
 
     @Test
     public void pivotModeWithSinglePivotCol() {
-        EnterpriseGetRowsRequest request = new EnterpriseGetRowsRequest();
+        AgGridGetRowsRequest request = new AgGridGetRowsRequest();
         request.setStartRow(0);
         request.setEndRow(100);
         request.setRowGroupCols(singletonList(

@@ -1,9 +1,8 @@
 package com.ag.grid.enterprise.oracle.demo.request;
 
-import java.io.Serializable;
 import java.util.Objects;
 
-public class ColumnVO implements Serializable {
+public class ColumnVO {
 
     private String id;
 
@@ -69,5 +68,15 @@ public class ColumnVO implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(id, displayName, field, aggFunc);
+    }
+
+    @Override
+    public String toString() {
+        return "ColumnVO{" +
+                "id='" + id + '\'' +
+                ", displayName='" + displayName + '\'' +
+                ", field='" + field + '\'' +
+                ", aggFunc='" + aggFunc + '\'' +
+                '}';
     }
 }
