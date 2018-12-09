@@ -1,9 +1,12 @@
 package com.ag.grid.enterprise.oracle.demo.dao;
 
 import com.ag.grid.enterprise.oracle.demo.data.AgGridRowSource;
+import com.ag.grid.enterprise.oracle.demo.data.RequestFilters;
 import com.ag.grid.enterprise.oracle.demo.data.mapsource.FilteredMapSource;
 import com.ag.grid.enterprise.oracle.demo.data.mapsource.MapSourceBasedAgGridRowSource;
-import com.ag.grid.enterprise.oracle.demo.data.RequestFilters;
+import com.ag.grid.enterprise.oracle.demo.data.mapsource.MapUtils;
+import com.ag.grid.enterprise.oracle.demo.data.types.ReflectedTypeInfo;
+import com.ag.grid.enterprise.oracle.demo.data.types.TypeInfo;
 import com.ag.grid.enterprise.oracle.demo.domain.Trade;
 import com.ag.grid.enterprise.oracle.demo.filter.ColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
@@ -35,6 +38,8 @@ public class InMemoryTradeDao implements TradeDao {
     private final AgGridRowSource rowSource = new MapSourceBasedAgGridRowSource<>(this::filter);
 
     private final ObjectMapper mapper = new ObjectMapper();
+
+    private final TypeInfo typeInfo = ReflectedTypeInfo.of(Trade.class);
 
     @PostConstruct
     private void init() {
@@ -80,8 +85,7 @@ public class InMemoryTradeDao implements TradeDao {
             // todo
             keyPredicate = k -> true;
         }
-        // todo
-        final Predicate<Map<String, Object>> valuePredicate = v -> true;
+        final Predicate<Map<String, Object>> valuePredicate = MapUtils.predicate(filters, typeInfo);
         return new FilteredMapSource<Long>() {
             @Override
             public Iterable<Long> getKeys() {
@@ -108,5 +112,4 @@ public class InMemoryTradeDao implements TradeDao {
             }
         };
     }
-
 }

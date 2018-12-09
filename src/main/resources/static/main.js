@@ -73,6 +73,7 @@ let gridOptions = {
   columnDefs: columnDefs,
   enableColResize: true,
   rowModelType: 'enterprise',
+  maxBlocksInCache: 10,
   cacheBlockSize: 100,
   rowGroupPanelShow: 'always',
   pivotPanelShow: 'always',

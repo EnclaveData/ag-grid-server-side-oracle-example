@@ -44,6 +44,10 @@ public final class Context {
         return isGrouping;
     }
 
+    public int getGroupByColumnCount() {
+        return groupByColumns.size();
+    }
+
     public List<String> getGroupByColumns() {
         return groupByColumns;
     }

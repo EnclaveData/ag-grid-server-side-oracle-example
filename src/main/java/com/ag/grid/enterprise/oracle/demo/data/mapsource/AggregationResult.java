@@ -33,9 +33,29 @@ public final class AggregationResult {
         if (rawResult == null) {
             throw new NullPointerException("result");
         }
-        return rawResult.entrySet()
-                .stream()
-                .map(this::toRows);
+        return expandGroups(rawResult)
+                .map(this::addSecondaryColumns);
+    }
+
+    private Stream<Map<?, ?>> expandGroups(Map<?, ?> map) {
+        return expandGroup(0, null, map);
+    }
+
+    private Stream<Map<?, ?>> expandGroup(int index, Node parent, Map<?, ?> map) {
+        final List<String> groupByColumns = context.getGroupByColumns();
+        if (index < groupByColumns.size()) {
+            return map.entrySet()
+                    .stream()
+                    .flatMap(e -> expandGroup(index + 1,
+                            new Node(parent, groupByColumns.get(index), e.getKey()), (Map<?, ?>) e.getValue()));
+        }
+        return Stream.of(map);
+    }
+
+    private Map<String, Object> addSecondaryColumns(Map<?, ?> map) {
+        // todo
+        return (Map<String, Object>) map;
+        //throw new UnsupportedOperationException("not implemented");
     }
 
     private String getColumnName(int index) {
@@ -46,10 +66,11 @@ public final class AggregationResult {
         return context.getPivotColumns().get(index - keys.size());
     }
 
-    private Map<String, Object> toRows(Map.Entry<?, ?> row) {
+    private Stream<Map<String, Object>> toRows(Map.Entry<?, ?> row) {
         final Map<String, Object> result = new HashMap<>();
         append(0, new Node(null, getColumnName(0), row.getKey(), null), row.getValue(), result);
-        return result;
+        // todo flatten groups, pivot secondary columns, etc!
+        return Stream.of(result);
     }
 
     private static String name(String parentName, String name) {
@@ -94,8 +115,15 @@ public final class AggregationResult {
                 ));
         context.addSecondaryColumns(column2secondary.values());
         if (value instanceof Map) {
-            ((Map<String, Object>) value).forEach((k, v) ->
-                    target.put(column2secondary.get(k), v));
+            ((Map<String, Object>) value).entrySet()
+                    .stream()
+                    .filter(e -> column2secondary.containsKey(e.getKey()))
+                    .forEach(e ->
+                            target.put(
+                                    column2secondary.get(e.getKey()),
+                                    e.getValue()
+                            )
+                    );
         } else {
             throw new IllegalStateException("Unsupported type: " + value);
         }
@@ -133,5 +161,9 @@ final class Node {
         this.name = name;
         this.key = key;
         this.path = path;
+    }
+
+    Node(Node parent, String name, Object key) {
+        this(parent, name, key, null);
     }
 }

@@ -35,37 +35,36 @@ final class Aggregation {
                     Stream.concat(
                             context.getGroupByColumns().stream(),
                             context.getPivotColumns().stream()
-                    ).map(Aggregation::classifier)
+                    ).map(MapUtils::extractValue)
                             .collect(Collectors.toList());
         } else {
             classifiers =
                     context.getGroupByColumns()
                             .stream()
-                            .map(Aggregation::classifier)
+                            .map(MapUtils::extractValue)
                             .collect(Collectors.toList());
         }
 
         // We need to compose collectors from last to first, so that outer one would be the first grouping column
-        Lists.reverse(classifiers);
+        final List<Function<Map<String, Object>, String>> reversed = Lists.reverse(classifiers);
 
         Collector grouping = Collectors.groupingBy(
-                classifiers.get(0),
+                reversed.get(0),
                 Collectors.reducing(
                         new HashMap<>(),
                         MergeOperator.create(context)
                 )
         );
-        for (int i = 1; i < classifiers.size(); i++) {
-            grouping = Collectors.groupingBy(classifiers.get(i), grouping);
+        for (int i = 1; i < reversed.size(); i++) {
+            grouping = Collectors.groupingBy(reversed.get(i), grouping);
         }
         return grouping;
     }
-
-    private static Function<Map<String, Object>, String> classifier(String key) {
-        return (Map<String, Object> m) -> Objects.toString(m.get(key));
-    }
 }
 
+/**
+ * todo - we need real merger!
+ */
 final class MergeOperator implements BinaryOperator<Map<String, Object>> {
 
     private final Object UNDEFINED = new Object();
@@ -76,7 +75,7 @@ final class MergeOperator implements BinaryOperator<Map<String, Object>> {
 
     private final Set<String> valueColumns;
 
-    MergeOperator(Context context, Set<String> groupByColumns, Set<String> valueColumns) {
+    private MergeOperator(Context context, Set<String> groupByColumns, Set<String> valueColumns) {
         this.context = requireNonNull(context);
         this.groupByColumns = requireNonNull(groupByColumns);
         this.valueColumns = requireNonNull(valueColumns);
@@ -94,7 +93,7 @@ final class MergeOperator implements BinaryOperator<Map<String, Object>> {
     }
 
     private Object mergeValues(String name, Object a, Object b) {
-        if (name == null){
+        if (name == null) {
             int g = 0;
         }
         if (Objects.equals(a, b)) {

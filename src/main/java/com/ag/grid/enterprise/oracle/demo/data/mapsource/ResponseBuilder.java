@@ -2,10 +2,12 @@ package com.ag.grid.enterprise.oracle.demo.data.mapsource;
 
 import com.ag.grid.enterprise.oracle.demo.data.Context;
 import com.ag.grid.enterprise.oracle.demo.data.DefaultRequestFilters;
+import com.ag.grid.enterprise.oracle.demo.request.SortModel;
 import com.ag.grid.enterprise.oracle.demo.response.AgGridGetRowsResponse;
 import com.google.common.collect.Iterables;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -56,8 +58,21 @@ final class ResponseBuilder<K> {
     }
 
     private Stream<Map<String, Object>> sort(Stream<Map<String, Object>> src) {
-        // todo
-        return src;
+        return context.getRequest()
+                .getSortModel()
+                .stream()
+                .map(this::comparator)
+                .reduce(Comparator::thenComparing)
+                .map(src::sorted)
+                .orElse(src);
+    }
+
+    private Comparator<Map<String, Object>> comparator(SortModel sortModel) {
+        Comparator<Map<String, Object>> comparator = Comparator.comparing(MapUtils.extractValue(sortModel.getColId()));
+        if (!"asc".equals(sortModel.getSort())) {
+            comparator = comparator.reversed();
+        }
+        return Comparator.nullsFirst(comparator);
     }
 
     private List<Map<String, Object>> limit(Stream<Map<String, Object>> src) {

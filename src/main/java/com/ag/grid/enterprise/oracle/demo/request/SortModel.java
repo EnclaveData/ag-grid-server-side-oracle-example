@@ -1,14 +1,15 @@
 package com.ag.grid.enterprise.oracle.demo.request;
 
-import java.io.Serializable;
 import java.util.Objects;
 
-public class SortModel implements Serializable {
+public class SortModel {
 
     private String colId;
+
     private String sort;
 
-    public SortModel() {}
+    public SortModel() {
+    }
 
     public SortModel(String colId, String sort) {
         this.colId = colId;
