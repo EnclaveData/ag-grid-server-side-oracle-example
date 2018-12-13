@@ -29,7 +29,7 @@ public class TradeController {
     private final TradeDao tradeDao;
 
     @Autowired
-    public TradeController(@Qualifier("inMemoryTradeDao") TradeDao tradeDao) {
+    public TradeController(@Qualifier("inMemoryObjTradeDao") TradeDao tradeDao) {
         this.tradeDao = tradeDao;
     }
 

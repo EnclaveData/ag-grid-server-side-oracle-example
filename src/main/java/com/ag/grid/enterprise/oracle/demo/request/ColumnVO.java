@@ -10,12 +10,12 @@ public class ColumnVO {
 
     private String field;
 
-    private String aggFunc;
+    private AggFunc aggFunc;
 
     public ColumnVO() {
     }
 
-    public ColumnVO(String id, String displayName, String field, String aggFunc) {
+    public ColumnVO(String id, String displayName, String field, AggFunc aggFunc) {
         this.id = id;
         this.displayName = displayName;
         this.field = field;
@@ -46,11 +46,11 @@ public class ColumnVO {
         this.field = field;
     }
 
-    public String getAggFunc() {
+    public AggFunc getAggFunc() {
         return aggFunc;
     }
 
-    public void setAggFunc(String aggFunc) {
+    public void setAggFunc(AggFunc aggFunc) {
         this.aggFunc = aggFunc;
     }
 

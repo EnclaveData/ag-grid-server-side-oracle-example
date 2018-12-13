@@ -28,8 +28,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-@Repository("inMemoryTradeDao")
-public class InMemoryTradeDao implements TradeDao {
+@Repository("inMemoryMapTradeDao")
+public class InMemoryMapTradeDao implements TradeDao {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 

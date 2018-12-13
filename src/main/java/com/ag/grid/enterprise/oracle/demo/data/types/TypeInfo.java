@@ -1,14 +1,14 @@
 package com.ag.grid.enterprise.oracle.demo.data.types;
 
-import java.util.Set;
+import java.util.Map;
+import java.util.function.Function;
 
 /**
  * @author Yuriy Kiselev (uze@yandex.ru).
  */
-public interface TypeInfo {
+public interface TypeInfo<V> {
 
-    Set<String> getNames();
+    Map<String, Attribute<V>> getAttributes();
 
-    Class<?> getType(String name);
-
+    Function<V,Map<String,Object>> toMap();
 }

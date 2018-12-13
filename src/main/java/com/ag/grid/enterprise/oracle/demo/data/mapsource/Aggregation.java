@@ -114,7 +114,7 @@ final class MergeOperator implements BinaryOperator<Map<String, Object>> {
         final ColumnVO column = context.getColumn(name);
         final String func = column.getAggFunc();
         if (func == null) {
-            throw new IllegalStateException("Unable to merge - no aggregation function: " + name);
+            throw new IllegalStateException("Unable to createMerge - no aggregation function: " + name);
         }
         switch (func) {
             case "sum":
