@@ -2,8 +2,8 @@ package com.ag.grid.enterprise.oracle.demo.dao;
 
 import com.ag.grid.enterprise.oracle.demo.builder.CohQueryBuilder;
 import com.ag.grid.enterprise.oracle.demo.domain.Trade;
-import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
-import com.ag.grid.enterprise.oracle.demo.response.AgGridGetRowsResponse;
+import com.github.ykiselev.aggrid.domain.request.AgGridGetRowsRequest;
+import com.github.ykiselev.aggrid.domain.response.AgGridGetRowsResponse;
 import com.oracle.common.util.Duration;
 import com.tangosol.coherence.dslquery.CoherenceQueryLanguage;
 import com.tangosol.coherence.dslquery.ExecutionContext;

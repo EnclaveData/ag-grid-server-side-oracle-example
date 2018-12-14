@@ -1,6 +1,6 @@
 package com.ag.grid.enterprise.oracle.demo.builder;
 
-import com.ag.grid.enterprise.oracle.demo.filter.NumberColumnFilter;
+import com.github.ykiselev.aggrid.domain.filter.NumberColumnFilter;
 import com.tangosol.util.Filter;
 import com.tangosol.util.ValueExtractor;
 import com.tangosol.util.filter.AndFilter;

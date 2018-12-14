@@ -2,8 +2,8 @@ package com.ag.grid.enterprise.oracle.demo.dao;
 
 import com.ag.grid.enterprise.oracle.demo.builder.CacheQueryBuilder;
 import com.ag.grid.enterprise.oracle.demo.domain.Trade;
-import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
-import com.ag.grid.enterprise.oracle.demo.response.AgGridGetRowsResponse;
+import com.github.ykiselev.aggrid.domain.request.AgGridGetRowsRequest;
+import com.github.ykiselev.aggrid.domain.response.AgGridGetRowsResponse;
 import com.tangosol.net.CacheFactory;
 import com.tangosol.net.NamedCache;
 import com.tangosol.util.Filter;

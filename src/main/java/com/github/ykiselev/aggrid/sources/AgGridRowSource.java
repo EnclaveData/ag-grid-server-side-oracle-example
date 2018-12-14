@@ -1,4 +1,4 @@
-package com.ag.grid.enterprise.oracle.demo.dao;
+package com.github.ykiselev.aggrid.sources;
 
 import com.github.ykiselev.aggrid.domain.request.AgGridGetRowsRequest;
 import com.github.ykiselev.aggrid.domain.response.AgGridGetRowsResponse;
@@ -6,7 +6,7 @@ import com.github.ykiselev.aggrid.domain.response.AgGridGetRowsResponse;
 /**
  * @author Yuriy Kiselev (uze@yandex.ru).
  */
-public interface TradeDao {
+public interface AgGridRowSource {
 
-    AgGridGetRowsResponse getData(AgGridGetRowsRequest request);
+    AgGridGetRowsResponse getRows(AgGridGetRowsRequest request);
 }

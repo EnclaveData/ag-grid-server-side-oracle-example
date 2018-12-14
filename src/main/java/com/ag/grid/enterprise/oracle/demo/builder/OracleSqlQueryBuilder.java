@@ -1,15 +1,16 @@
 package com.ag.grid.enterprise.oracle.demo.builder;
 
-import com.ag.grid.enterprise.oracle.demo.filter.ColumnFilter;
-import com.ag.grid.enterprise.oracle.demo.filter.NumberColumnFilter;
-import com.ag.grid.enterprise.oracle.demo.filter.SetColumnFilter;
-import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
-import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
-import com.ag.grid.enterprise.oracle.demo.request.SortModel;
+import com.github.ykiselev.aggrid.domain.filter.ColumnFilter;
+import com.github.ykiselev.aggrid.domain.filter.NumberColumnFilter;
+import com.github.ykiselev.aggrid.domain.filter.SetColumnFilter;
+import com.github.ykiselev.aggrid.domain.request.AgGridGetRowsRequest;
+import com.github.ykiselev.aggrid.domain.request.ColumnVO;
+import com.github.ykiselev.aggrid.domain.request.SortModel;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -213,7 +214,7 @@ public class OracleSqlQueryBuilder {
                 .collect(toList());
     }
 
-    private String asString(List<String> l) {
+    private String asString(Collection<String> l) {
         return "(" + l.stream().map(s -> "\'" + s + "\'").collect(joining(", ")) + ")";
     }
 

@@ -1,8 +1,8 @@
 package com.ag.grid.enterprise.oracle.demo.builder;
 
-import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
-import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
-import com.ag.grid.enterprise.oracle.demo.response.AgGridGetRowsResponse;
+import com.github.ykiselev.aggrid.domain.request.ColumnVO;
+import com.github.ykiselev.aggrid.domain.request.AgGridGetRowsRequest;
+import com.github.ykiselev.aggrid.domain.response.AgGridGetRowsResponse;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.tuple.Pair;
 

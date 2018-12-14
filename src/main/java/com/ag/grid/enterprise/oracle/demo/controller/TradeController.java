@@ -1,8 +1,8 @@
 package com.ag.grid.enterprise.oracle.demo.controller;
 
 import com.ag.grid.enterprise.oracle.demo.dao.TradeDao;
-import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
-import com.ag.grid.enterprise.oracle.demo.response.AgGridGetRowsResponse;
+import com.github.ykiselev.aggrid.domain.request.AgGridGetRowsRequest;
+import com.github.ykiselev.aggrid.domain.response.AgGridGetRowsResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

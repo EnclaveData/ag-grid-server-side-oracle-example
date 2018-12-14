@@ -1,18 +1,23 @@
 package com.ag.grid.enterprise.oracle.demo.dao;
 
-import com.ag.grid.enterprise.oracle.demo.data.AgGridRowSource;
-import com.ag.grid.enterprise.oracle.demo.data.RequestFilters;
-import com.ag.grid.enterprise.oracle.demo.data.objectsource.FilteredObjectSource;
-import com.ag.grid.enterprise.oracle.demo.data.objectsource.ObjectSource;
-import com.ag.grid.enterprise.oracle.demo.data.objectsource.ObjectSourceBasedAgGridRowSource;
 import com.ag.grid.enterprise.oracle.demo.domain.Trade;
-import com.ag.grid.enterprise.oracle.demo.filter.ColumnFilter;
-import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
-import com.ag.grid.enterprise.oracle.demo.response.AgGridGetRowsResponse;
+import com.github.ykiselev.aggrid.domain.filter.ColumnFilter;
+import com.github.ykiselev.aggrid.domain.request.AgGridGetRowsRequest;
+import com.github.ykiselev.aggrid.domain.response.AgGridGetRowsResponse;
+import com.github.ykiselev.aggrid.sources.AgGridRowSource;
+import com.github.ykiselev.aggrid.sources.RequestFilters;
+import com.github.ykiselev.aggrid.sources.objects.FilteredObjectSource;
+import com.github.ykiselev.aggrid.sources.objects.ObjectSource;
+import com.github.ykiselev.aggrid.sources.objects.ObjectSourceBasedAgGridRowSource;
+import com.github.ykiselev.aggrid.sources.objects.Predicates;
+import com.github.ykiselev.aggrid.sources.objects.types.ReflectedTypeInfo;
+import com.github.ykiselev.aggrid.sources.objects.types.TypeInfo;
+import com.google.common.collect.ImmutableSet;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.PostConstruct;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,16 +25,16 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Repository("inMemoryObjTradeDao")
 public class InMemoryObjTradeDao implements TradeDao {
 
+    private final TypeInfo<Trade> typeInfo = ReflectedTypeInfo.of(Trade.class);
+
     private final Map<Long, Trade> cache = new ConcurrentHashMap<>();
-/*
+
     private final AgGridRowSource rowSource = new ObjectSourceBasedAgGridRowSource<>(
             new ObjectSource<Long, Trade>() {
                 @Override
@@ -45,6 +50,11 @@ public class InMemoryObjTradeDao implements TradeDao {
                     // todo
                     final Predicate<Trade> valuePredicate = v -> true;
                     return new FilteredObjectSource<Long, Trade>() {
+                        @Override
+                        public Set<String> getFilteredNames() {
+                            return Collections.emptySet();
+                        }
+
                         @Override
                         public Iterable<Long> getKeys() {
                             return () ->
@@ -66,17 +76,12 @@ public class InMemoryObjTradeDao implements TradeDao {
                 }
 
                 @Override
-                public BinaryOperator<Trade> createMerge(Set<String> attributes) {
-                    throw new UnsupportedOperationException("not implemented");
-                }
-
-                @Override
-                public Function<Trade, Object> createExtractor(String attribute) {
-                    throw new UnsupportedOperationException("not implemented");
+                public TypeInfo<Trade> getTypeInfo() {
+                    return typeInfo;
                 }
             }
     );
-*/
+
     @PostConstruct
     private void init() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -109,7 +114,6 @@ public class InMemoryObjTradeDao implements TradeDao {
 
     @Override
     public AgGridGetRowsResponse getData(AgGridGetRowsRequest request) {
-        //return rowSource.getRows(request);
-        throw new UnsupportedOperationException();
+        return rowSource.getRows(request);
     }
 }

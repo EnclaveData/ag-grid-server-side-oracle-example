@@ -1,10 +1,10 @@
 package com.ag.grid.enterprise.oracle.demo.builder;
 
-import com.ag.grid.enterprise.oracle.demo.filter.ColumnFilter;
-import com.ag.grid.enterprise.oracle.demo.filter.NumberColumnFilter;
-import com.ag.grid.enterprise.oracle.demo.filter.SetColumnFilter;
-import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
-import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
+import com.github.ykiselev.aggrid.domain.filter.ColumnFilter;
+import com.github.ykiselev.aggrid.domain.filter.NumberColumnFilter;
+import com.github.ykiselev.aggrid.domain.filter.SetColumnFilter;
+import com.github.ykiselev.aggrid.domain.request.ColumnVO;
+import com.github.ykiselev.aggrid.domain.request.AgGridGetRowsRequest;
 import com.google.common.collect.ImmutableMap;
 import com.tangosol.util.Filter;
 import com.tangosol.util.InvocableMap;

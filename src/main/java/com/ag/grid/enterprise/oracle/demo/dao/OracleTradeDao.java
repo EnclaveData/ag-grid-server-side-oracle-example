@@ -1,15 +1,14 @@
 package com.ag.grid.enterprise.oracle.demo.dao;
 
 import com.ag.grid.enterprise.oracle.demo.builder.OracleSqlQueryBuilder;
-import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
-import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
-import com.ag.grid.enterprise.oracle.demo.response.AgGridGetRowsResponse;
+import com.github.ykiselev.aggrid.domain.request.AgGridGetRowsRequest;
+import com.github.ykiselev.aggrid.domain.request.ColumnVO;
+import com.github.ykiselev.aggrid.domain.response.AgGridGetRowsResponse;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
 
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;

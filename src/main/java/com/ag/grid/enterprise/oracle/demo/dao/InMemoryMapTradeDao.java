@@ -1,16 +1,16 @@
 package com.ag.grid.enterprise.oracle.demo.dao;
 
-import com.ag.grid.enterprise.oracle.demo.data.AgGridRowSource;
-import com.ag.grid.enterprise.oracle.demo.data.RequestFilters;
-import com.ag.grid.enterprise.oracle.demo.data.mapsource.FilteredMapSource;
-import com.ag.grid.enterprise.oracle.demo.data.mapsource.MapSourceBasedAgGridRowSource;
-import com.ag.grid.enterprise.oracle.demo.data.mapsource.MapUtils;
-import com.ag.grid.enterprise.oracle.demo.data.types.ReflectedTypeInfo;
-import com.ag.grid.enterprise.oracle.demo.data.types.TypeInfo;
+import com.github.ykiselev.aggrid.sources.AgGridRowSource;
+import com.github.ykiselev.aggrid.sources.RequestFilters;
+import com.github.ykiselev.aggrid.sources.maps.FilteredMapSource;
+import com.github.ykiselev.aggrid.sources.maps.MapSourceBasedAgGridRowSource;
+import com.github.ykiselev.aggrid.common.MapUtils;
+import com.github.ykiselev.aggrid.sources.objects.types.ReflectedTypeInfo;
+import com.github.ykiselev.aggrid.sources.objects.types.TypeInfo;
 import com.ag.grid.enterprise.oracle.demo.domain.Trade;
-import com.ag.grid.enterprise.oracle.demo.filter.ColumnFilter;
-import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
-import com.ag.grid.enterprise.oracle.demo.response.AgGridGetRowsResponse;
+import com.github.ykiselev.aggrid.domain.filter.ColumnFilter;
+import com.github.ykiselev.aggrid.domain.request.AgGridGetRowsRequest;
+import com.github.ykiselev.aggrid.domain.response.AgGridGetRowsResponse;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;

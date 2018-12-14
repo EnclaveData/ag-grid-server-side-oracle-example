@@ -1,14 +1,16 @@
 package com.ag.grid.enterprise.oracle.demo;
 
 import com.ag.grid.enterprise.oracle.demo.builder.OracleSqlQueryBuilder;
-import com.ag.grid.enterprise.oracle.demo.filter.ColumnFilter;
-import com.ag.grid.enterprise.oracle.demo.filter.NumberColumnFilter;
-import com.ag.grid.enterprise.oracle.demo.filter.SetColumnFilter;
-import com.ag.grid.enterprise.oracle.demo.request.AggFunc;
-import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
-import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
-import com.ag.grid.enterprise.oracle.demo.request.SortModel;
-import com.ag.grid.enterprise.oracle.demo.request.Sorting;
+import com.github.ykiselev.aggrid.domain.filter.ColumnFilter;
+import com.github.ykiselev.aggrid.domain.filter.NumberColumnFilter;
+import com.github.ykiselev.aggrid.domain.filter.SetColumnFilter;
+import com.github.ykiselev.aggrid.domain.request.AggFunc;
+import com.github.ykiselev.aggrid.domain.request.ColumnVO;
+import com.github.ykiselev.aggrid.domain.request.AgGridGetRowsRequest;
+import com.github.ykiselev.aggrid.domain.request.SortModel;
+import com.github.ykiselev.aggrid.domain.request.Sorting;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -105,7 +107,7 @@ public class OracleSqlQueryBuilderTest {
         ));
 
         request.setFilterModel(new HashMap<String, ColumnFilter>() {{
-            put("SPORT", new SetColumnFilter(asList("Rowing", "Tennis")));
+            put("SPORT", new SetColumnFilter(ImmutableSet.of("Rowing", "Tennis")));
             put("AGE", new NumberColumnFilter("equals", 22, null));
         }});
         request.setSortModel(singletonList(new SortModel("ATHLETE", Sorting.ASC)));
