@@ -3,13 +3,19 @@ package com.ag.grid.enterprise.oracle.demo.builder;
 import com.ag.grid.enterprise.oracle.demo.filter.ColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.filter.NumberColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.filter.SetColumnFilter;
-import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
 import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
+import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
 import com.ag.grid.enterprise.oracle.demo.request.SortModel;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -19,7 +25,9 @@ import static com.google.common.collect.Streams.zip;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.String.format;
 import static java.lang.String.join;
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toCollection;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
 
 /**
@@ -28,16 +36,27 @@ import static java.util.stream.Stream.concat;
 public class OracleSqlQueryBuilder {
 
     private List<String> groupKeys;
+
     private List<String> rowGroups;
+
     private List<String> rowGroupsToInclude;
+
     private boolean isGrouping;
+
     private List<ColumnVO> valueColumns;
+
     private List<ColumnVO> pivotColumns;
+
     private Map<String, ColumnFilter> filterModel;
+
     private List<SortModel> sortModel;
+
     private int startRow, endRow;
+
     private List<ColumnVO> rowGroupCols;
+
     private Map<String, List<String>> pivotValues;
+
     private boolean isPivotMode;
 
     public String createSql(AgGridGetRowsRequest request, String tableName, Map<String, List<String>> pivotValues) {
@@ -65,7 +84,8 @@ public class OracleSqlQueryBuilder {
                     .collect(toList());
         } else {
             Stream<String> valueCols = valueColumns.stream()
-                    .map(valueCol -> valueCol.getAggFunc() + '(' + valueCol.getField() + ") as " + valueCol.getField());
+                    .map(valueCol -> StringUtils.lowerCase(Objects.toString(valueCol.getAggFunc())) + '(' +
+                            valueCol.getField() + ") as " + valueCol.getField());
 
             selectCols = concat(rowGroupsToInclude.stream(), valueCols)
                     .collect(toList());

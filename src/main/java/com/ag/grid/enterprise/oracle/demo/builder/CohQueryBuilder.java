@@ -4,17 +4,19 @@ import com.ag.grid.enterprise.oracle.demo.domain.Trade;
 import com.ag.grid.enterprise.oracle.demo.filter.ColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.filter.NumberColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.filter.SetColumnFilter;
-import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
 import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
+import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
 import com.ag.grid.enterprise.oracle.demo.request.SortModel;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.lang.reflect.Field;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -111,7 +113,7 @@ public class CohQueryBuilder {
             selectCols = concat(rowGroupsToInclude.stream(), extractPivotStatements()).collect(toList());
         } else {
             Stream<String> valueCols = valueColumns.stream()
-                    .map(valueCol -> valueCol.getAggFunc() + '(' + valueCol.getField() + ") ");// + valueCol.getField());
+                    .map(valueCol -> StringUtils.lowerCase(Objects.toString(valueCol.getAggFunc())) + '(' + valueCol.getField() + ") ");// + valueCol.getField());
 
             selectCols = concat(rowGroupsToInclude.stream(), valueCols).collect(toList());
         }

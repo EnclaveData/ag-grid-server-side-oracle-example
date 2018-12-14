@@ -3,22 +3,13 @@ package com.github.ykiselev.aggregation;
 import com.ag.grid.enterprise.oracle.demo.data.Context;
 import com.ag.grid.enterprise.oracle.demo.data.objectsource.ObjectSource;
 import com.ag.grid.enterprise.oracle.demo.data.types.Attribute;
-import com.ag.grid.enterprise.oracle.demo.data.types.TypeInfo;
-import com.ag.grid.enterprise.oracle.demo.request.AggFunc;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiFunction;
-import java.util.function.DoubleBinaryOperator;
 import java.util.function.Function;
-import java.util.function.IntBinaryOperator;
-import java.util.function.LongBinaryOperator;
-import java.util.function.ToDoubleFunction;
-import java.util.function.ToIntFunction;
-import java.util.function.ToLongFunction;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,23 +21,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class Aggregation {
 
-    private static final Map<AggregationKey, Function<Attribute<?>, Accumulator<?>>> AGGREGATORS =
-            ImmutableMap.<AggregationKey, Function<Attribute<?>, Accumulator<?>>>builder()
-                    .put(new AggregationKey(int.class, AggFunc.SUM), a -> summingInt(a.getName(), a.getIntGetter()))
-                    .put(new AggregationKey(int.class, AggFunc.AVG), a -> averageInt(a.getName(), a.getIntGetter()))
-                    .put(new AggregationKey(int.class, AggFunc.MIN), a -> minInt(a.getName(), a.getIntGetter()))
-                    .put(new AggregationKey(int.class, AggFunc.MAX), a -> maxInt(a.getName(), a.getIntGetter()))
-                    .put(new AggregationKey(long.class, AggFunc.SUM), a -> summingLong(a.getName(), a.getLongGetter()))
-                    .put(new AggregationKey(long.class, AggFunc.AVG), a -> averageLong(a.getName(), a.getLongGetter()))
-                    .put(new AggregationKey(long.class, AggFunc.MIN), a -> minLong(a.getName(), a.getLongGetter()))
-                    .put(new AggregationKey(long.class, AggFunc.MAX), a -> maxLong(a.getName(), a.getLongGetter()))
-                    .put(new AggregationKey(double.class, AggFunc.SUM), a -> summingDouble(a.getName(), a.getDoubleGetter()))
-                    .put(new AggregationKey(double.class, AggFunc.AVG), a -> averageDouble(a.getName(), a.getDoubleGetter()))
-                    .put(new AggregationKey(double.class, AggFunc.MIN), a -> minDouble(a.getName(), a.getDoubleGetter()))
-                    .put(new AggregationKey(double.class, AggFunc.MAX), a -> maxDouble(a.getName(), a.getDoubleGetter()))
-                    .build();
-
-    static <K, V> Collector<V, ?, Map> create(Context context, ObjectSource<K, V> source) {
+    private static <K, V> Collector<V, ?, Map> create(Context context, ObjectSource<K, V> source) {
         final Map<String, Attribute<V>> attrs = source.getTypeInfo().getAttributes();
         final Function<String, Function<V, ?>> getterFactory =
                 col -> attrs.get(col).getObjectGetter();
@@ -69,20 +44,7 @@ public final class Aggregation {
                         .collect(Collectors.toList())
         );
 
-        final Map<String, AggFunc> aggColumns = context.getColumnsToMerge()
-                .stream()
-                .collect(Collectors.toMap(
-                        Function.identity(),
-                        col -> context.getColumn(col).getAggFunc()
-                ));
-
-        final Collector<V, ObjectAggregator<V>, Map<String, Object>> collector = Collector.of(
-                () -> createMerge(aggColumns, source.getTypeInfo()),
-                ObjectAggregator::add,
-                ObjectAggregator::combine,
-                ObjectAggregator::finish
-        );
-        Collector grouping = Collectors.groupingBy(classifiers.get(0), collector);
+        Collector grouping = Collectors.groupingBy(classifiers.get(0), Aggregators.createCollector(context, source));
 
         for (int i = 1; i < classifiers.size(); i++) {
             grouping = Collectors.groupingBy(classifiers.get(i), grouping);
@@ -90,262 +52,163 @@ public final class Aggregation {
         return grouping;
     }
 
-    private static <V> ObjectAggregator<V> createMerge(Map<String, AggFunc> columnsToMerge, TypeInfo<V> typeInfo) {
-        final BiFunction<String, AggFunc, Accumulator<V>> accumulatorFunction =
-                (col, aggFn) -> {
-                    final Attribute<V> attr = typeInfo.getAttributes().get(col);
-                    final AggregationKey key = new AggregationKey(attr.getType(), aggFn);
-                    final Function<Attribute<?>, Accumulator<?>> function = AGGREGATORS.get(key);
-                    if (function == null) {
-                        throw new IllegalStateException("No aggregation function for " + key);
-                    }
-                    return (Accumulator<V>) function.apply(attr);
-                };
-        return new ObjectAggregator<>(
-                typeInfo.toMap(),
-                columnsToMerge.entrySet()
+    public static <K, V> Stream<Map<String, Object>> groupBy(Stream<V> input, Context context, ObjectSource<K, V> source) {
+        if (context.isGrouping() || context.isPivot()) {
+            return new AggregationResult(context, input.collect(create(context, source))).parse();
+        }
+        return input.map(source.getTypeInfo().toMap());
+    }
+
+    private static final class AggregationResult {
+
+        private final Context context;
+
+        private final Map<?, ?> rawResult;
+
+        private final int maxDepth;
+
+        AggregationResult(Context context, Map<?, ?> rawResult) {
+            this.context = requireNonNull(context);
+            this.rawResult = requireNonNull(rawResult);
+            this.maxDepth = context.getGroupByColumns().size() + context.getPivotColumns().size();
+        }
+
+        Stream<Map<String, Object>> parse() {
+            if (rawResult == null) {
+                throw new NullPointerException("result");
+            }
+            return expandGroups(rawResult)
+                    .map(this::addSecondaryColumns);
+        }
+
+        private Stream<Map<?, ?>> expandGroups(Map<?, ?> map) {
+            return expandGroup(0, null, map);
+        }
+
+        private Stream<Map<?, ?>> expandGroup(int index, Node parent, Map<?, ?> map) {
+            final List<String> groupByColumns = context.getGroupByColumns();
+            if (index < groupByColumns.size()) {
+                return map.entrySet()
                         .stream()
-                        .map(e -> accumulatorFunction.apply(e.getKey(), e.getValue()))
-                        .toArray(Accumulator[]::new)
-        );
-    }
-
-    static <V> IntAccumulator<V> summingInt(String name, ToIntFunction<V> getter) {
-        return new IntAccumulator<>(name, getter, (acc, v) -> acc + v, (acc, count) -> acc);
-    }
-
-    static <V> IntAccumulator<V> averageInt(String name, ToIntFunction<V> getter) {
-        return new IntAccumulator<>(name, getter, (acc, v) -> acc + v, (acc, count) -> acc / count);
-    }
-
-    static <V> IntAccumulator<V> minInt(String name, ToIntFunction<V> getter) {
-        return new IntAccumulator<>(name, getter, Math::min, (acc, count) -> acc);
-    }
-
-    static <V> IntAccumulator<V> maxInt(String name, ToIntFunction<V> getter) {
-        return new IntAccumulator<>(name, getter, Math::max, (acc, count) -> acc);
-    }
-
-    static final class IntAccumulator<V> implements Accumulator<V> {
-
-        private final String name;
-
-        private final ToIntFunction<V> getter;
-
-        private final IntBinaryOperator accumulator;
-
-        private final IntBinaryOperator finalizer;
-
-        private int acc;
-
-        IntAccumulator(String name, ToIntFunction<V> getter, IntBinaryOperator accumulator, IntBinaryOperator finalizer) {
-            this.name = requireNonNull(name);
-            this.getter = requireNonNull(getter);
-            this.accumulator = requireNonNull(accumulator);
-            this.finalizer = requireNonNull(finalizer);
-        }
-
-        @Override
-        public void accumulate(V value) {
-            acc = accumulator.applyAsInt(acc, getter.applyAsInt(value));
-        }
-
-        @Override
-        public void combine(Accumulator<V> other) {
-            acc = accumulator.applyAsInt(acc, ((IntAccumulator<?>) other).acc);
-        }
-
-        @Override
-        public void finish(int count, Map<String, Object> target) {
-            target.put(name, finalizer.applyAsInt(acc, count));
-        }
-    }
-
-    static <V> LongAccumulator<V> summingLong(String name, ToLongFunction<V> getter) {
-        return new LongAccumulator<>(name, getter, (acc, v) -> acc + v, (acc, count) -> acc);
-    }
-
-    static <V> LongAccumulator<V> averageLong(String name, ToLongFunction<V> getter) {
-        return new LongAccumulator<>(name, getter, (acc, v) -> acc + v, (acc, count) -> acc / count);
-    }
-
-    static <V> LongAccumulator<V> minLong(String name, ToLongFunction<V> getter) {
-        return new LongAccumulator<>(name, getter, Math::min, (acc, count) -> acc);
-    }
-
-    static <V> LongAccumulator<V> maxLong(String name, ToLongFunction<V> getter) {
-        return new LongAccumulator<>(name, getter, Math::max, (acc, count) -> acc);
-    }
-
-    static final class LongAccumulator<V> implements Accumulator<V> {
-
-        private final String name;
-
-        private final ToLongFunction<V> getter;
-
-        private final LongBinaryOperator accumulator;
-
-        private final LongBinaryOperator finalizer;
-
-        private long acc;
-
-        LongAccumulator(String name, ToLongFunction<V> getter, LongBinaryOperator accumulator, LongBinaryOperator finalizer) {
-            this.name = requireNonNull(name);
-            this.getter = requireNonNull(getter);
-            this.accumulator = requireNonNull(accumulator);
-            this.finalizer = requireNonNull(finalizer);
-        }
-
-        @Override
-        public void accumulate(V value) {
-            acc = accumulator.applyAsLong(acc, getter.applyAsLong(value));
-        }
-
-        @Override
-        public void combine(Accumulator<V> other) {
-            acc = accumulator.applyAsLong(acc, ((LongAccumulator<?>) other).acc);
-        }
-
-        @Override
-        public void finish(int count, Map<String, Object> target) {
-            target.put(name, finalizer.applyAsLong(acc, count));
-        }
-    }
-
-    static <V> DoubleAccumulator<V> summingDouble(String name, ToDoubleFunction<V> getter) {
-        return new DoubleAccumulator<>(name, getter, (acc, v) -> acc + v, (acc, count) -> acc);
-    }
-
-    static <V> DoubleAccumulator<V> averageDouble(String name, ToDoubleFunction<V> getter) {
-        return new DoubleAccumulator<>(name, getter, (acc, v) -> acc + v, (acc, count) -> acc / count);
-    }
-
-    static <V> DoubleAccumulator<V> minDouble(String name, ToDoubleFunction<V> getter) {
-        return new DoubleAccumulator<>(name, getter, Math::min, (acc, count) -> acc);
-    }
-
-    static <V> DoubleAccumulator<V> maxDouble(String name, ToDoubleFunction<V> getter) {
-        return new DoubleAccumulator<>(name, getter, Math::max, (acc, count) -> acc);
-    }
-
-    static final class DoubleAccumulator<V> implements Accumulator<V> {
-
-        private final String name;
-
-        private final ToDoubleFunction<V> getter;
-
-        private final DoubleBinaryOperator accumulator;
-
-        private final DoubleBinaryOperator finalizer;
-
-        private double acc;
-
-        DoubleAccumulator(String name, ToDoubleFunction<V> getter, DoubleBinaryOperator accumulator, DoubleBinaryOperator finalizer) {
-            this.name = requireNonNull(name);
-            this.getter = requireNonNull(getter);
-            this.accumulator = requireNonNull(accumulator);
-            this.finalizer = requireNonNull(finalizer);
-        }
-
-        @Override
-        public void accumulate(V value) {
-            acc = accumulator.applyAsDouble(acc, getter.applyAsDouble(value));
-        }
-
-        @Override
-        public void combine(Accumulator<V> other) {
-            acc = accumulator.applyAsDouble(acc, ((DoubleAccumulator<?>) other).acc);
-        }
-
-        @Override
-        public void finish(int count, Map<String, Object> target) {
-            target.put(name, finalizer.applyAsDouble(acc, count));
-        }
-    }
-
-    /**
-     *
-     */
-    static final class ObjectAggregator<V> {
-
-        private final Function<V, Map<String, Object>> toMap;
-
-        private final Accumulator<V>[] accumulators;
-
-        private V first;
-
-        private int counter;
-
-        ObjectAggregator(Function<V, Map<String, Object>> toMap, Accumulator<V>[] accumulators) {
-            this.toMap = requireNonNull(toMap);
-            this.accumulators = accumulators.clone();
-        }
-
-        void add(V value) {
-            if (first == null) {
-                first = value;
+                        .flatMap(e -> expandGroup(index + 1,
+                                new Node(parent, groupByColumns.get(index), e.getKey()), (Map<?, ?>) e.getValue()));
             }
-            for (Accumulator<V> aggregator : accumulators) {
-                aggregator.accumulate(value);
-            }
-            counter++;
+            return Stream.of(map);
         }
 
-        ObjectAggregator<V> combine(ObjectAggregator<V> other) {
-            if (first == null) {
-                return other;
+        private Map<String, Object> addSecondaryColumns(Map<?, ?> map) {
+            // todo
+            return (Map<String, Object>) map;
+            //throw new UnsupportedOperationException("not implemented");
+        }
+
+        private String getColumnName(int index) {
+            final List<String> keys = context.getGroupByColumns();
+            if (index < keys.size()) {
+                return keys.get(index);
             }
-            if (other.first != null) {
-                if (accumulators.length != other.accumulators.length) {
-                    throw new IllegalStateException("Accumulator arrays size mismatch: " + accumulators.length + " <> " + other.accumulators.length);
+            return context.getPivotColumns().get(index - keys.size());
+        }
+
+        private Stream<Map<String, Object>> toRows(Map.Entry<?, ?> row) {
+            final Map<String, Object> result = new HashMap<>();
+            append(0, new Node(null, getColumnName(0), row.getKey(), null), row.getValue(), result);
+            // todo flatten groups, pivot secondary columns, etc!
+            return Stream.of(result);
+        }
+
+        private static String name(String parentName, String name) {
+            if (parentName != null) {
+                return parentName + "_" + name;
+            }
+            return name;
+        }
+
+        private void append(int index, Node node, Object value, Map<String, Object> target) {
+            if (value instanceof Map) {
+                final int idx = index + 1;
+                if (idx < maxDepth) {
+                    final String name = getColumnName(idx);
+                    final Function<Object, String> path;
+                    if (idx <= context.getGroupKeyCount()) {
+                        path = Objects::toString;
+                    } else {
+                        path = k -> name(node.getPath(), Objects.toString(k));
+                    }
+                    ((Map<?, ?>) value).forEach((k, v) ->
+                            append(idx, new Node(node, name, k, path.apply(k)), v, target));
+                } else {
+                    append(node, value, target);
                 }
-                for (int i = 0; i < accumulators.length; i++) {
-                    accumulators[i].combine(other.accumulators[i]);
-                }
+            } else {
+                append(node, value, target);
             }
-            return this;
         }
 
-        Map<String, Object> finish() {
-            final Map<String, Object> result = toMap.apply(first);
-            for (Accumulator<V> aggregator : accumulators) {
-                aggregator.finish(counter, result);
+        private void append(Node parent, Object value, Map<String, Object> target) {
+            Node n = parent;
+            while (n != null) {
+                target.put(n.getName(), n.getKey());
+                n = n.getParent();
             }
-            return result;
+            final Map<String, String> column2secondary = context.getValueColumns()
+                    .stream()
+                    .collect(Collectors.toMap(
+                            col -> col,
+                            col -> name(parent.getPath(), col)
+                    ));
+            context.addSecondaryColumns(column2secondary.values());
+            if (value instanceof Map) {
+                ((Map<String, Object>) value).entrySet()
+                        .stream()
+                        .filter(e -> column2secondary.containsKey(e.getKey()))
+                        .forEach(e ->
+                                target.put(
+                                        column2secondary.get(e.getKey()),
+                                        e.getValue()
+                                )
+                        );
+            } else {
+                throw new IllegalStateException("Unsupported type: " + value);
+            }
         }
     }
 
-    private static final class AggregationKey {
+    private static final class Node {
 
-        private final Class<?> clazz;
+        private Node parent;
 
-        private final AggFunc aggFunc;
+        private final String path;
 
-        AggregationKey(Class<?> clazz, AggFunc aggFunc) {
-            this.clazz = requireNonNull(clazz);
-            this.aggFunc = requireNonNull(aggFunc);
+        private final String name;
+
+        private final Object key;
+
+        String getPath() {
+            return path;
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            AggregationKey that = (AggregationKey) o;
-            return clazz.equals(that.clazz) &&
-                    aggFunc == that.aggFunc;
+        Node getParent() {
+            return parent;
         }
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(clazz, aggFunc);
+        String getName() {
+            return name;
         }
 
-        @Override
-        public String toString() {
-            return "AggregationKey{" +
-                    "clazz=" + clazz +
-                    ", aggFunc=" + aggFunc +
-                    '}';
+        Object getKey() {
+            return key;
+        }
+
+        Node(Node parent, String name, Object key, String path) {
+            this.parent = parent;
+            this.name = name;
+            this.key = key;
+            this.path = path;
+        }
+
+        Node(Node parent, String name, Object key) {
+            this(parent, name, key, null);
         }
     }
 }

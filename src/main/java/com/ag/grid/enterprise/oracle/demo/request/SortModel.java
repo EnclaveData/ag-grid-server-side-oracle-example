@@ -6,12 +6,12 @@ public class SortModel {
 
     private String colId;
 
-    private String sort;
+    private Sorting sort;
 
     public SortModel() {
     }
 
-    public SortModel(String colId, String sort) {
+    public SortModel(String colId, Sorting sort) {
         this.colId = colId;
         this.sort = sort;
     }
@@ -24,11 +24,11 @@ public class SortModel {
         this.colId = colId;
     }
 
-    public String getSort() {
+    public Sorting getSort() {
         return sort;
     }
 
-    public void setSort(String sort) {
+    public void setSort(Sorting sort) {
         this.sort = sort;
     }
 

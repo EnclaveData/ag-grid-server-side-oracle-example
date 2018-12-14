@@ -1,6 +1,7 @@
 package com.ag.grid.enterprise.oracle.demo.data.mapsource;
 
 import com.ag.grid.enterprise.oracle.demo.data.Context;
+import com.ag.grid.enterprise.oracle.demo.request.AggFunc;
 import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -112,12 +113,12 @@ final class MergeOperator implements BinaryOperator<Map<String, Object>> {
             return a;
         }
         final ColumnVO column = context.getColumn(name);
-        final String func = column.getAggFunc();
+        final AggFunc func = column.getAggFunc();
         if (func == null) {
             throw new IllegalStateException("Unable to createMerge - no aggregation function: " + name);
         }
         switch (func) {
-            case "sum":
+            case SUM:
                 return sum(a, b);
 
             default:

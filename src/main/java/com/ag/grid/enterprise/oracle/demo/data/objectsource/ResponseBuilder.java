@@ -2,9 +2,10 @@ package com.ag.grid.enterprise.oracle.demo.data.objectsource;
 
 import com.ag.grid.enterprise.oracle.demo.data.Context;
 import com.ag.grid.enterprise.oracle.demo.data.DefaultRequestFilters;
-import com.ag.grid.enterprise.oracle.demo.data.mapsource.AggregationResult;
 import com.ag.grid.enterprise.oracle.demo.request.SortModel;
+import com.ag.grid.enterprise.oracle.demo.request.Sorting;
 import com.ag.grid.enterprise.oracle.demo.response.AgGridGetRowsResponse;
+import com.github.ykiselev.aggregation.Aggregation;
 import com.google.common.collect.Iterables;
 
 import java.util.Collection;
@@ -35,8 +36,7 @@ final class ResponseBuilder<K, V> {
         final Stream<V> rows = getFilteredRows(5_000);
         final Stream<Map<String, Object>> result;
         if (context.isGrouping() || context.isPivot()) {
-            result = new AggregationResult(context,
-                    rows.collect(Aggregation.create(context, source))).parse();
+            result = Aggregation.groupBy(rows, context, source);
         } else {
             result = convert(rows);
         }
@@ -73,7 +73,7 @@ final class ResponseBuilder<K, V> {
 
     private Comparator<Map<String, Object>> comparator(SortModel sortModel) {
         Comparator<Map<String, Object>> comparator = Comparator.comparing(MapUtils.extractValue(sortModel.getColId()));
-        if (!"asc".equals(sortModel.getSort())) {
+        if (Sorting.ASC != sortModel.getSort()) {
             comparator = comparator.reversed();
         }
         return Comparator.nullsFirst(comparator);

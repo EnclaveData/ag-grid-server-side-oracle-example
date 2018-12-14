@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 public class InMemoryObjTradeDao implements TradeDao {
 
     private final Map<Long, Trade> cache = new ConcurrentHashMap<>();
-
+/*
     private final AgGridRowSource rowSource = new ObjectSourceBasedAgGridRowSource<>(
             new ObjectSource<Long, Trade>() {
                 @Override
@@ -76,7 +76,7 @@ public class InMemoryObjTradeDao implements TradeDao {
                 }
             }
     );
-
+*/
     @PostConstruct
     private void init() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -109,6 +109,7 @@ public class InMemoryObjTradeDao implements TradeDao {
 
     @Override
     public AgGridGetRowsResponse getData(AgGridGetRowsRequest request) {
-        return rowSource.getRows(request);
+        //return rowSource.getRows(request);
+        throw new UnsupportedOperationException();
     }
 }

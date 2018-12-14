@@ -4,9 +4,11 @@ import com.ag.grid.enterprise.oracle.demo.builder.OracleSqlQueryBuilder;
 import com.ag.grid.enterprise.oracle.demo.filter.ColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.filter.NumberColumnFilter;
 import com.ag.grid.enterprise.oracle.demo.filter.SetColumnFilter;
+import com.ag.grid.enterprise.oracle.demo.request.AggFunc;
 import com.ag.grid.enterprise.oracle.demo.request.ColumnVO;
 import com.ag.grid.enterprise.oracle.demo.request.AgGridGetRowsRequest;
 import com.ag.grid.enterprise.oracle.demo.request.SortModel;
+import com.ag.grid.enterprise.oracle.demo.request.Sorting;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -26,13 +28,13 @@ public class OracleSqlQueryBuilderTest {
         request.setStartRow(0);
         request.setEndRow(100);
         request.setRowGroupCols(singletonList(
-                new ColumnVO("COUNTRY", "Country", "COUNTRY", "")
+                new ColumnVO("COUNTRY", "Country", "COUNTRY", null)
         ));
         request.setValueCols(asList(
-                new ColumnVO("GOLD", "Gold", "GOLD", "sum"),
-                new ColumnVO("SILVER", "Silver", "SILVER", "sum"),
-                new ColumnVO("BRONZE", "Bronze", "BRONZE", "sum"),
-                new ColumnVO("TOTAL", "Total", "TOTAL", "sum")
+                new ColumnVO("GOLD", "Gold", "GOLD", AggFunc.SUM),
+                new ColumnVO("SILVER", "Silver", "SILVER", AggFunc.SUM),
+                new ColumnVO("BRONZE", "Bronze", "BRONZE", AggFunc.SUM),
+                new ColumnVO("TOTAL", "Total", "TOTAL", AggFunc.SUM)
         ));
 
         String sql = new OracleSqlQueryBuilder().createSql(request, "medal", emptyMap());
@@ -47,14 +49,14 @@ public class OracleSqlQueryBuilderTest {
         request.setStartRow(100);
         request.setEndRow(200);
         request.setRowGroupCols(asList(
-                new ColumnVO("COUNTRY", "Country", "COUNTRY", ""),
-                new ColumnVO("YEAR", "Year", "YEAR", "")
+                new ColumnVO("COUNTRY", "Country", "COUNTRY", null),
+                new ColumnVO("YEAR", "Year", "YEAR", null)
         ));
         request.setValueCols(asList(
-                new ColumnVO("GOLD", "Gold", "GOLD", "sum"),
-                new ColumnVO("SILVER", "Silver", "SILVER", "sum"),
-                new ColumnVO("BRONZE", "Bronze", "BRONZE", "sum"),
-                new ColumnVO("TOTAL", "Total", "TOTAL", "sum")
+                new ColumnVO("GOLD", "Gold", "GOLD", AggFunc.SUM),
+                new ColumnVO("SILVER", "Silver", "SILVER", AggFunc.SUM),
+                new ColumnVO("BRONZE", "Bronze", "BRONZE", AggFunc.SUM),
+                new ColumnVO("TOTAL", "Total", "TOTAL", AggFunc.SUM)
         ));
 
         String sql = new OracleSqlQueryBuilder().createSql(request, "medal", emptyMap());
@@ -69,14 +71,14 @@ public class OracleSqlQueryBuilderTest {
         request.setStartRow(100);
         request.setEndRow(200);
         request.setRowGroupCols(asList(
-                new ColumnVO("COUNTRY", "Country", "COUNTRY", ""),
-                new ColumnVO("YEAR", "Year", "YEAR", "")
+                new ColumnVO("COUNTRY", "Country", "COUNTRY", null),
+                new ColumnVO("YEAR", "Year", "YEAR", null)
         ));
         request.setValueCols(asList(
-                new ColumnVO("GOLD", "Gold", "GOLD", "sum"),
-                new ColumnVO("SILVER", "Silver", "SILVER", "sum"),
-                new ColumnVO("BRONZE", "Bronze", "BRONZE", "sum"),
-                new ColumnVO("TOTAL", "Total", "TOTAL", "sum")
+                new ColumnVO("GOLD", "Gold", "GOLD", AggFunc.SUM),
+                new ColumnVO("SILVER", "Silver", "SILVER", AggFunc.SUM),
+                new ColumnVO("BRONZE", "Bronze", "BRONZE", AggFunc.SUM),
+                new ColumnVO("TOTAL", "Total", "TOTAL", AggFunc.SUM)
         ));
         request.setGroupKeys(singletonList("Denmark"));
 
@@ -93,20 +95,20 @@ public class OracleSqlQueryBuilderTest {
         request.setStartRow(0);
         request.setEndRow(100);
         request.setRowGroupCols(singletonList(
-                new ColumnVO("COUNTRY", "Country", "COUNTRY", "")
+                new ColumnVO("COUNTRY", "Country", "COUNTRY", null)
         ));
         request.setValueCols(asList(
-                new ColumnVO("GOLD", "Gold", "GOLD", "sum"),
-                new ColumnVO("SILVER", "Silver", "SILVER", "sum"),
-                new ColumnVO("BRONZE", "Bronze", "BRONZE", "sum"),
-                new ColumnVO("TOTAL", "Total", "TOTAL", "sum")
+                new ColumnVO("GOLD", "Gold", "GOLD", AggFunc.SUM),
+                new ColumnVO("SILVER", "Silver", "SILVER", AggFunc.SUM),
+                new ColumnVO("BRONZE", "Bronze", "BRONZE", AggFunc.SUM),
+                new ColumnVO("TOTAL", "Total", "TOTAL", AggFunc.SUM)
         ));
 
         request.setFilterModel(new HashMap<String, ColumnFilter>() {{
             put("SPORT", new SetColumnFilter(asList("Rowing", "Tennis")));
             put("AGE", new NumberColumnFilter("equals", 22, null));
         }});
-        request.setSortModel(singletonList(new SortModel("ATHLETE", "asc")));
+        request.setSortModel(singletonList(new SortModel("ATHLETE", Sorting.ASC)));
 
         String sql = new OracleSqlQueryBuilder().createSql(request, "medal", emptyMap());
 
@@ -121,13 +123,13 @@ public class OracleSqlQueryBuilderTest {
         request.setStartRow(0);
         request.setEndRow(100);
         request.setRowGroupCols(singletonList(
-                new ColumnVO("COUNTRY", "Country", "COUNTRY", "")
+                new ColumnVO("COUNTRY", "Country", "COUNTRY", null)
         ));
         request.setValueCols(asList(
-                new ColumnVO("GOLD", "Gold", "GOLD", "sum"),
-                new ColumnVO("SILVER", "Silver", "SILVER", "sum"),
-                new ColumnVO("BRONZE", "Bronze", "BRONZE", "sum"),
-                new ColumnVO("TOTAL", "Total", "TOTAL", "sum")
+                new ColumnVO("GOLD", "Gold", "GOLD", AggFunc.SUM),
+                new ColumnVO("SILVER", "Silver", "SILVER", AggFunc.SUM),
+                new ColumnVO("BRONZE", "Bronze", "BRONZE", AggFunc.SUM),
+                new ColumnVO("TOTAL", "Total", "TOTAL", AggFunc.SUM)
         ));
         request.setPivotMode(true);
 
@@ -143,13 +145,13 @@ public class OracleSqlQueryBuilderTest {
         request.setStartRow(0);
         request.setEndRow(100);
         request.setRowGroupCols(singletonList(
-                new ColumnVO("COUNTRY", "Country", "COUNTRY", "")
+                new ColumnVO("COUNTRY", "Country", "COUNTRY", null)
         ));
         request.setValueCols(asList(
-                new ColumnVO("GOLD", "Gold", "GOLD", "sum"),
-                new ColumnVO("SILVER", "Silver", "SILVER", "sum"),
-                new ColumnVO("BRONZE", "Bronze", "BRONZE", "sum"),
-                new ColumnVO("TOTAL", "Total", "TOTAL", "sum")
+                new ColumnVO("GOLD", "Gold", "GOLD", AggFunc.SUM),
+                new ColumnVO("SILVER", "Silver", "SILVER", AggFunc.SUM),
+                new ColumnVO("BRONZE", "Bronze", "BRONZE", AggFunc.SUM),
+                new ColumnVO("TOTAL", "Total", "TOTAL", AggFunc.SUM)
         ));
         request.setPivotMode(true);
         request.setPivotCols(singletonList(
