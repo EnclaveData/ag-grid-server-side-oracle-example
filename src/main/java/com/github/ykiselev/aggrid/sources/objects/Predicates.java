@@ -37,7 +37,7 @@ public final class Predicates {
     }
 
     public static <V> Predicate<V> predicate(ToIntFunction<V> getter, NumberColumnFilter filter) {
-        switch (filter.getFilterType()) {
+        switch (filter.getType()) {
             case "equals":
                 return equals2(getter, filter);
 
@@ -60,12 +60,12 @@ public final class Predicates {
                 return between(getter, filter);
 
             default:
-                throw new IllegalArgumentException("Unknown filter type: " + filter.getFilterType());
+                throw new IllegalArgumentException("Unknown filter type: " + filter.getType());
         }
     }
 
     public static <V> Predicate<V> predicate(Function<V, String> getter, TextColumnFilter filter) {
-        switch (filter.getFilterType()) {
+        switch (filter.getType()) {
             case "equals":
                 return equals2(getter, filter);
 
@@ -85,7 +85,7 @@ public final class Predicates {
                 return endsWith(getter, filter);
 
             default:
-                throw new IllegalArgumentException("Unknown filter type: " + filter.getFilterType());
+                throw new IllegalArgumentException("Unknown filter type: " + filter.getType());
         }
     }
 

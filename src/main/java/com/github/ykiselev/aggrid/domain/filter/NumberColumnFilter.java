@@ -17,10 +17,6 @@ public class NumberColumnFilter extends ColumnFilter {
         this.filterTo = filterTo;
     }
 
-    public String getFilterType() {
-        return filterType;
-    }
-
     public String getType() {
         return type;
     }

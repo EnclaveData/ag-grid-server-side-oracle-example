@@ -34,7 +34,7 @@ public final class DefaultRequestFilters implements RequestFilters {
     }
 
     public static RequestFilters create(AgGridGetRowsRequest request) {
-        final Map<String, ColumnFilter> map = new HashMap<>();
+        final Map<String, ColumnFilter> map = new HashMap<>(request.getFilterModel());
         final List<String> keys = request.getGroupKeys();
         final List<ColumnVO> columns = request.getRowGroupCols();
         IntStream.range(0, Math.min(keys.size(), columns.size()))
