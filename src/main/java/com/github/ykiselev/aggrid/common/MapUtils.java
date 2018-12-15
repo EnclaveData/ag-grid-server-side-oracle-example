@@ -1,7 +1,6 @@
 package com.github.ykiselev.aggrid.common;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -9,7 +8,7 @@ import java.util.function.Function;
  */
 public final class MapUtils {
 
-    public static Function<Map<String, Object>, String> extractValue(String key) {
-        return (Map<String, Object> m) -> Objects.toString(m.get(key));
+    public static Function<Map<String, Object>, Comparable> extractValue(String key) {
+        return (Map<String, Object> m) -> (Comparable) m.get(key);
     }
 }

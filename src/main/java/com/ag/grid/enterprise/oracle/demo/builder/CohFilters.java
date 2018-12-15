@@ -15,7 +15,7 @@ import com.tangosol.util.filter.NotEqualsFilter;
  * @author Yuriy Kiselev (uze@yandex.ru).
  */
 @SuppressWarnings("unchecked")
-final class Filters {
+final class CohFilters {
 
     static Filter between(NumberColumnFilter filter, ValueExtractor extractor) {
         return new AndFilter(

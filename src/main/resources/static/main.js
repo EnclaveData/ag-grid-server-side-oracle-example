@@ -2,9 +2,16 @@ var columnDefs = [
 
   // these are the row groups, so they are all hidden (they are shown in the group column)
   {headerName: 'Hierarchy', children: [
-      {headerName: 'Product', field: 'product', type: 'dimension', rowGroupIndex: 0, hide: true},
-      {headerName: 'Portfolio', field: 'portfolio', type: 'dimension', rowGroupIndex: 1, hide: true},
-      {headerName: 'Book', field: 'book', type: 'dimension', rowGroupIndex: 2, hide: true},
+      {headerName: 'Product', field: 'product', type: 'dimension', rowGroupIndex: 0, hide: true, filter: 'agTextColumnFilter',},
+      {headerName: 'Portfolio', field: 'portfolio', type: 'dimension', rowGroupIndex: 1, hide: true, filter: 'agTextColumnFilter',
+      filterParams: {
+                applyButton: true,
+                clearButton: true,
+                defaultOption: "equals",
+                newRowsAction: 'keep',
+              }
+      },
+      {headerName: 'Book', field: 'book', type: 'dimension', rowGroupIndex: 2, hide: true, filter: 'agTextColumnFilter',},
     ]},
 
   // some string values, that do not get aggregated

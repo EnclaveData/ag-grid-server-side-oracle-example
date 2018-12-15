@@ -82,16 +82,17 @@ public final class Aggregation {
         }
 
         private Stream<Map<?, ?>> expandGroups(Map<?, ?> map) {
-            return expandGroup(0, null, map);
+            return expandGroup(0, map);
         }
 
-        private Stream<Map<?, ?>> expandGroup(int index, Node parent, Map<?, ?> map) {
+        private Stream<Map<?, ?>> expandGroup(int index, Map<?, ?> map) {
             final List<String> groupByColumns = context.getGroupByColumns();
             if (index < groupByColumns.size()) {
                 return map.entrySet()
                         .stream()
                         .flatMap(e -> expandGroup(index + 1,
-                                new Node(parent, groupByColumns.get(index), e.getKey()), (Map<?, ?>) e.getValue()));
+                                //new Node(parent, groupByColumns.get(index), e.getKey()),
+                                (Map<?, ?>) e.getValue()));
             }
             return Stream.of(map);
         }

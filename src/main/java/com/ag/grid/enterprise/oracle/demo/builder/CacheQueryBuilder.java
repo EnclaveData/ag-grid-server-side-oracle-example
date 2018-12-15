@@ -45,13 +45,13 @@ public final class CacheQueryBuilder {
 
     private static final Map<String, BiFunction<NumberColumnFilter, ValueExtractor, Filter>> numberFilterMap =
             ImmutableMap.<String, BiFunction<NumberColumnFilter, ValueExtractor, Filter>>builder()
-                    .put("inRange", Filters::between)
-                    .put("equals", Filters::equals)
-                    .put("notEqual", Filters::notEquals)
-                    .put("lessThan", Filters::lessThan)
-                    .put("lessThanOrEqual", Filters::lessThanOrEqual)
-                    .put("greaterThan", Filters::greaterThan)
-                    .put("greaterThanOrEqual", Filters::greaterThanOrEqual)
+                    .put("inRange", CohFilters::between)
+                    .put("equals", CohFilters::equals)
+                    .put("notEqual", CohFilters::notEquals)
+                    .put("lessThan", CohFilters::lessThan)
+                    .put("lessThanOrEqual", CohFilters::lessThanOrEqual)
+                    .put("greaterThan", CohFilters::greaterThan)
+                    .put("greaterThanOrEqual", CohFilters::greaterThanOrEqual)
                     .build();
 
     private static final Map<String, Function<String, InvocableMap.EntryAggregator>> aggregatorMap = ImmutableMap.of(

@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static java.util.Comparator.naturalOrder;
+import static java.util.Comparator.nullsFirst;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -108,11 +110,14 @@ public final class ObjectSourceBasedAgGridRowSource<K, V> implements AgGridRowSo
         }
 
         private Comparator<Map<String, Object>> comparator(SortModel sortModel) {
-            Comparator<Map<String, Object>> comparator = Comparator.comparing(MapUtils.extractValue(sortModel.getColId()));
+            Comparator<Map<String, Object>> comparator = Comparator.comparing(
+                    MapUtils.extractValue(sortModel.getColId()),
+                    nullsFirst(naturalOrder())
+            );
             if (Sorting.ASC != sortModel.getSort()) {
                 comparator = comparator.reversed();
             }
-            return Comparator.nullsFirst(comparator);
+            return nullsFirst(comparator);
         }
 
         private List<Map<String, Object>> limit(Stream<Map<String, Object>> src) {

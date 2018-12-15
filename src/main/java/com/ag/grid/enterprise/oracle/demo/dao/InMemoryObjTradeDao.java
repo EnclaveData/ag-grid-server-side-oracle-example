@@ -10,22 +10,31 @@ import com.github.ykiselev.aggrid.sources.objects.FilteredObjectSource;
 import com.github.ykiselev.aggrid.sources.objects.ObjectSource;
 import com.github.ykiselev.aggrid.sources.objects.ObjectSourceBasedAgGridRowSource;
 import com.github.ykiselev.aggrid.sources.objects.Predicates;
+import com.github.ykiselev.aggrid.sources.objects.types.Attribute;
 import com.github.ykiselev.aggrid.sources.objects.types.ReflectedTypeInfo;
 import com.github.ykiselev.aggrid.sources.objects.types.TypeInfo;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableMap;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.PostConstruct;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.ToDoubleFunction;
+import java.util.function.ToIntFunction;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 
 @Repository("inMemoryObjTradeDao")
@@ -33,19 +42,69 @@ public class InMemoryObjTradeDao implements TradeDao {
 
     private final TypeInfo<Trade> typeInfo = ReflectedTypeInfo.of(Trade.class);
 
-    private final Map<Long, Trade> cache = new ConcurrentHashMap<>();
+    private static final class StringAttribute implements Attribute<String> {
+
+        @Override
+        public String getName() {
+            return "portfolio";
+        }
+
+        @Override
+        public Class<?> getType() {
+            return String.class;
+        }
+
+        @Override
+        public ToIntFunction<String> getIntGetter() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ToLongFunction<String> getLongGetter() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ToDoubleFunction<String> getDoubleGetter() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Function<String, ?> getObjectGetter() {
+            return Function.identity();
+        }
+    }
+
+    private final TypeInfo<String> keyTypeInfo = new TypeInfo<String>() {
+
+        private final Map<String, Attribute<String>> attributes =
+                ImmutableMap.of("portfolio", new StringAttribute());
+
+        @Override
+        public Map<String, Attribute<String>> getAttributes() {
+            return attributes;
+        }
+
+        @Override
+        public Function<String, Map<String, Object>> toMap() {
+            return v -> Collections.singletonMap("portfolio", v);
+        }
+    };
+
+    private final AtomicReference<Map<String, Map<Long, Trade>>> tradesByPortfolio = new AtomicReference<>(Collections.emptyMap());
+
+    private final AtomicReference<Map<Long, Trade>> allTrades = new AtomicReference<>(Collections.emptyMap());
 
     private final AgGridRowSource rowSource = new ObjectSourceBasedAgGridRowSource<>(
             new ObjectSource<Long, Trade>() {
                 @Override
                 public FilteredObjectSource<Long, Trade> filter(RequestFilters filters) {
-                    final Predicate<Long> keyPredicate;
-                    final ColumnFilter keyFilter = filters.getColumnFilter("tradeId");
-                    if (keyFilter == null) {
-                        keyPredicate = k -> true;
+                    final ColumnFilter keyFilter = filters.getColumnFilter("portfolio");
+                    final Predicate<String> keyPredicate;
+                    if (keyFilter != null) {
+                        keyPredicate = Predicates.predicate("portfolio", keyFilter, keyTypeInfo);
                     } else {
-                        // todo
-                        keyPredicate = k -> true;
+                        keyPredicate = null;
                     }
                     // todo
                     final Predicate<Trade> valuePredicate = v -> true;
@@ -57,17 +116,32 @@ public class InMemoryObjTradeDao implements TradeDao {
 
                         @Override
                         public Iterable<Long> getKeys() {
-                            return () ->
-                                    cache.keySet()
+                            return () -> {
+                                if (keyPredicate != null) {
+                                    final List<String> portfolios = tradesByPortfolio.get()
+                                            .keySet()
                                             .stream()
                                             .filter(keyPredicate)
+                                            .collect(Collectors.toList());
+                                    return portfolios.stream()
+                                            .map(tradesByPortfolio.get()::get)
+                                            .filter(Objects::nonNull)
+                                            .flatMap(m -> m.keySet().stream())
                                             .iterator();
+                                } else {
+                                    return allTrades.get()
+                                            .keySet()
+                                            .stream()
+                                            .iterator();
+                                }
+                            };
                         }
 
                         @Override
                         public List<Trade> getAll(Collection<Long> keys) {
+                            final Map<Long, Trade> map = allTrades.get();
                             return keys.stream()
-                                    .map(cache::get)
+                                    .map(map::get)
                                     .filter(Objects::nonNull)
                                     .filter(valuePredicate)
                                     .collect(Collectors.toList());
@@ -83,33 +157,24 @@ public class InMemoryObjTradeDao implements TradeDao {
     );
 
     @PostConstruct
-    private void init() {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-        Map<Long, Trade> map = new HashMap<>();
-        for (int i = 1; i <= 1_000_000; i++) {
-            Trade t = new Trade();
-            t.setProduct("product_" + (i % 100));
-            t.setPortfolio("portfolio_" + (i % 1500));
-            t.setBook("book_" + (i % 5000));
-            t.setTradeId(i);
-            t.setSubmitterId(i % 3000);
-            t.setSubmitterDealId(i);
-            t.setDealType("dealType_" + (i % 50));
-            t.setBidType("bidType_" + (i % 250));
-            t.setCurrentValue(rnd.nextDouble(0, 100_000));
-            t.setPreviousValue(rnd.nextDouble(0, 100_000));
-            t.setPl1(rnd.nextDouble());
-            t.setPl2(rnd.nextDouble());
-            t.setGainDx(rnd.nextDouble());
-            t.setSxPx(rnd.nextDouble());
-            t.setX99Out(rnd.nextDouble());
-            t.setBatch(i % 15000);
-            map.put(t.getTradeId(), t);
-            if (i % 5_000 == 0) {
-                cache.putAll(map);
-                map.clear();
-            }
+    private void init() throws IOException, ClassNotFoundException {
+        final Map<String, Map<Long, Trade>> map;
+        try (InputStream is = Files.newInputStream(Paths.get(System.getProperty("tradesDumpFile", "trades.jser")));
+             InputStream bis = new BufferedInputStream(is);
+             ObjectInputStream ois = new ObjectInputStream(bis)
+        ) {
+            map = (Map<String, Map<Long, Trade>>) ois.readObject();
         }
+        tradesByPortfolio.set(map);
+        allTrades.set(
+                map.values()
+                        .stream()
+                        .flatMap(m -> m.values().stream())
+                        .collect(Collectors.toMap(
+                                Trade::getTradeId,
+                                Function.identity()
+                        ))
+        );
     }
 
     @Override
