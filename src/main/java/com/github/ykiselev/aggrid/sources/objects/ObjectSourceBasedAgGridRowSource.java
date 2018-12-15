@@ -35,31 +35,31 @@ public final class ObjectSourceBasedAgGridRowSource<K, V> implements AgGridRowSo
 
     private final ObjectSource<K, V> source;
 
-    public ObjectSourceBasedAgGridRowSource(ObjectSource<K, V> source) {
+    private final int batchSize;
+
+    public ObjectSourceBasedAgGridRowSource(ObjectSource<K, V> source, int batchSize) {
         this.source = requireNonNull(source);
+        this.batchSize = batchSize;
     }
 
     @Override
     public AgGridGetRowsResponse getRows(AgGridGetRowsRequest request) {
-        return new ResponseBuilder<>(Context.create(request), source).build();
+        return new ResponseBuilder(Context.create(request)).build();
     }
 
-    private static final class ResponseBuilder<K, V> {
+    private final class ResponseBuilder {
 
         private final Context context;
 
-        private final ObjectSource<K, V> source;
-
-        ResponseBuilder(Context context, ObjectSource<K, V> source) {
+        ResponseBuilder(Context context) {
             this.context = requireNonNull(context);
-            this.source = requireNonNull(source);
         }
 
         AgGridGetRowsResponse build() {
-            final Stream<V> rows = getFilteredRows(5_000);
+            final Stream<V> rows = getFilteredRows(batchSize);
             final Stream<Map<String, Object>> result;
             if (context.isGrouping() || context.isPivot()) {
-                result = Aggregation.groupBy(rows, context, source);
+                result = Aggregation.groupBy(rows, context, source.getTypeInfo());
             } else {
                 result = convert(rows);
             }
@@ -92,7 +92,10 @@ public final class ObjectSourceBasedAgGridRowSource<K, V> implements AgGridRowSo
 
         private Predicate<V> filter(Set<String> columns, RequestFilters filters) {
             final Function<String, Predicate<V>> factory = col ->
-                    Predicates.predicate(col, filters.getColumnFilter(col), source.getTypeInfo());
+                    Predicates.predicate(
+                            source.getTypeInfo().getAttributes().get(col),
+                            filters.getColumnFilter(col)
+                    );
             return columns.stream()
                     .map(factory)
                     .reduce(Predicate::and)
@@ -127,4 +130,3 @@ public final class ObjectSourceBasedAgGridRowSource<K, V> implements AgGridRowSo
         }
     }
 }
-

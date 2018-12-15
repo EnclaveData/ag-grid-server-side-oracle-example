@@ -14,4 +14,11 @@ public final class GroupKey extends ColumnFilter {
     public GroupKey(String filter) {
         this.filter = filter;
     }
+
+    @Override
+    public String toString() {
+        return "GroupKey{" +
+                "filter='" + filter + '\'' +
+                '}';
+    }
 }

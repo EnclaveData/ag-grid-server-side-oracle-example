@@ -2,7 +2,6 @@ package com.github.ykiselev.aggrid.sources.objects.aggregation;
 
 import com.github.ykiselev.aggrid.domain.request.AggFunc;
 import com.github.ykiselev.aggrid.sources.Context;
-import com.github.ykiselev.aggrid.sources.objects.ObjectSource;
 import com.github.ykiselev.aggrid.sources.objects.types.Attribute;
 import com.github.ykiselev.aggrid.sources.objects.types.TypeInfo;
 import com.google.common.collect.ImmutableMap;
@@ -50,7 +49,7 @@ final class Aggregators {
                     .put(AggFunc.MAX, a -> maxDouble(a.getName(), a.getDoubleGetter()))
                     .build();
 
-    static <K, V> Collector<V, ?, Map<String, Object>> createCollector(Context context, ObjectSource<K, V> source) {
+    static <V> Collector<V, ?, Map<String, Object>> createCollector(Context context, TypeInfo<V> typeInfo) {
         final Map<String, AggFunc> aggColumns = context.getColumnsToMerge()
                 .stream()
                 .filter(col -> context.getColumn(col).getAggFunc() != null)
@@ -60,7 +59,7 @@ final class Aggregators {
                 ));
 
         return Collector.of(
-                () -> createMerge(aggColumns, source.getTypeInfo()),
+                () -> createMerge(aggColumns, typeInfo),
                 ObjectAggregator::add,
                 ObjectAggregator::combine,
                 ObjectAggregator::finish

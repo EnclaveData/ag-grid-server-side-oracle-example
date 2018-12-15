@@ -6,7 +6,6 @@ import com.github.ykiselev.aggrid.domain.filter.NumberColumnFilter;
 import com.github.ykiselev.aggrid.domain.filter.SetColumnFilter;
 import com.github.ykiselev.aggrid.domain.filter.TextColumnFilter;
 import com.github.ykiselev.aggrid.sources.objects.types.Attribute;
-import com.github.ykiselev.aggrid.sources.objects.types.TypeInfo;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -19,8 +18,8 @@ import java.util.function.ToIntFunction;
  */
 public final class Predicates {
 
-    public static <V> Predicate<V> predicate(String name, ColumnFilter filter, TypeInfo<V> info) {
-        final Attribute<V> attr = info.getAttributes().get(name);
+    @SuppressWarnings("unchecked")
+    public static <V> Predicate<V> predicate(Attribute<V> attr, ColumnFilter filter) {
         final Predicate<V> result;
         if (filter instanceof NumberColumnFilter) {
             result = predicate(attr.getIntGetter(), ((NumberColumnFilter) filter));
@@ -105,6 +104,7 @@ public final class Predicates {
         return v -> Objects.equals(getter.apply(v), filter.getFilter());
     }
 
+    @SuppressWarnings("unchecked")
     private static boolean compare(Object a, Object b, IntPredicate expected) {
         return a instanceof Comparable && expected.test(((Comparable) a).compareTo(b));
     }
@@ -129,7 +129,7 @@ public final class Predicates {
         return v -> {
             final int value = getter.applyAsInt(v);
             return compare(value, filter.getFilter(), r -> r >= 0)
-                    && compare(value, filter.getFilter(), r -> r < filter.getFilterTo());
+                    && compare(value, filter.getFilterTo(), r -> r <= 0);
         };
     }
 
@@ -138,7 +138,7 @@ public final class Predicates {
     }
 
     private static <V> Predicate<V> contains(Function<V, String> getter, TextColumnFilter filter) {
-        return str(getter, s -> s.contains(filter.getFilter()));
+        return str(getter, s -> s != null && s.contains(filter.getFilter()));
     }
 
     private static <V> Predicate<V> notContains(Function<V, String> getter, TextColumnFilter filter) {
@@ -146,10 +146,10 @@ public final class Predicates {
     }
 
     private static <V> Predicate<V> startsWith(Function<V, String> getter, TextColumnFilter filter) {
-        return str(getter, s -> s.startsWith(filter.getFilter()));
+        return str(getter, s -> s != null && s.startsWith(filter.getFilter()));
     }
 
     private static <V> Predicate<V> endsWith(Function<V, String> getter, TextColumnFilter filter) {
-        return str(getter, s -> s.endsWith(filter.getFilter()));
+        return str(getter, s -> s != null && s.endsWith(filter.getFilter()));
     }
 }

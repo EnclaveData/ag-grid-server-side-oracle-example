@@ -13,7 +13,6 @@ import com.github.ykiselev.aggrid.sources.objects.Predicates;
 import com.github.ykiselev.aggrid.sources.objects.types.Attribute;
 import com.github.ykiselev.aggrid.sources.objects.types.ReflectedTypeInfo;
 import com.github.ykiselev.aggrid.sources.objects.types.TypeInfo;
-import com.google.common.collect.ImmutableMap;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.PostConstruct;
@@ -75,21 +74,7 @@ public class InMemoryObjTradeDao implements TradeDao {
         }
     }
 
-    private final TypeInfo<String> keyTypeInfo = new TypeInfo<String>() {
-
-        private final Map<String, Attribute<String>> attributes =
-                ImmutableMap.of("portfolio", new StringAttribute());
-
-        @Override
-        public Map<String, Attribute<String>> getAttributes() {
-            return attributes;
-        }
-
-        @Override
-        public Function<String, Map<String, Object>> toMap() {
-            return v -> Collections.singletonMap("portfolio", v);
-        }
-    };
+    private final Attribute<String> stringAttribute = new StringAttribute();
 
     private final AtomicReference<Map<String, Map<Long, Trade>>> tradesByPortfolio = new AtomicReference<>(Collections.emptyMap());
 
@@ -102,7 +87,7 @@ public class InMemoryObjTradeDao implements TradeDao {
                     final ColumnFilter keyFilter = filters.getColumnFilter("portfolio");
                     final Predicate<String> keyPredicate;
                     if (keyFilter != null) {
-                        keyPredicate = Predicates.predicate("portfolio", keyFilter, keyTypeInfo);
+                        keyPredicate = Predicates.predicate(stringAttribute, keyFilter);
                     } else {
                         keyPredicate = null;
                     }
@@ -153,7 +138,8 @@ public class InMemoryObjTradeDao implements TradeDao {
                 public TypeInfo<Trade> getTypeInfo() {
                     return typeInfo;
                 }
-            }
+            },
+            5_000
     );
 
     @PostConstruct

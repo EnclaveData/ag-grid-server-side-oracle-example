@@ -6,15 +6,12 @@ public class TextColumnFilter extends ColumnFilter {
 
     private String filter;
 
-    private String filterTo;
-
     public TextColumnFilter() {
     }
 
-    public TextColumnFilter(String type, String filter, String filterTo) {
+    public TextColumnFilter(String type, String filter) {
         this.type = type;
         this.filter = filter;
-        this.filterTo = filterTo;
     }
 
     public String getType() {
@@ -25,16 +22,11 @@ public class TextColumnFilter extends ColumnFilter {
         return filter;
     }
 
-    public String getFilterTo() {
-        return filterTo;
-    }
-
     @Override
     public String toString() {
         return "TextColumnFilter{" +
                 "type='" + type + '\'' +
                 ", filter='" + filter + '\'' +
-                ", filterTo='" + filterTo + '\'' +
                 '}';
     }
 }

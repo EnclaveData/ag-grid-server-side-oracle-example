@@ -3,6 +3,7 @@ package com.github.ykiselev.aggrid.sources;
 import com.github.ykiselev.aggrid.domain.request.AgGridGetRowsRequest;
 import com.github.ykiselev.aggrid.domain.request.ColumnVO;
 import com.github.ykiselev.aggrid.domain.response.AgGridGetRowsResponse;
+import com.github.ykiselev.aggrid.sources.objects.aggregation.Aggregation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -45,10 +46,6 @@ public final class Context {
 
     public boolean isGrouping() {
         return isGrouping;
-    }
-
-    public int getGroupByColumnCount() {
-        return groupByColumns.size();
     }
 
     public List<String> getGroupByColumns() {
@@ -101,6 +98,17 @@ public final class Context {
         return secondaryColumns.add(column);
     }
 
+    /**
+     * Secondary column names are generated during aggregation as a concatenation of pivot column values and value
+     * column name. For example, having pivot columns A,B with values (a1,a2) and (b1) and value columns C,D we'll have
+     * secondary columns "a1_b1_C", "a2_b1_C", "a1_b1_D", "a2_b2_D".<br/>
+     * Number of columns is always multiplication of each column's number of values (Na * Nb)
+     * <p/>
+     * Note: this method is called from {@link Aggregation} class.
+     *
+     * @param columns the secondary column names to add
+     * @return {@code true} if at least one of supplied columns was absent in this context.
+     */
     public boolean addSecondaryColumns(Collection<String> columns) {
         return secondaryColumns.addAll(columns);
     }
