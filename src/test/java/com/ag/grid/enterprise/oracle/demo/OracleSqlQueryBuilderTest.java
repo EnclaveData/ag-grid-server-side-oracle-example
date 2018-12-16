@@ -11,6 +11,7 @@ import com.github.ykiselev.aggrid.domain.request.SortModel;
 import com.github.ykiselev.aggrid.domain.request.Sorting;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -22,6 +23,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
+@Ignore
 public class OracleSqlQueryBuilderTest {
 
     @Test

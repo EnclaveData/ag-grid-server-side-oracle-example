@@ -13,9 +13,9 @@ import java.util.stream.Stream
 /**
  * @author Yuriy Kiselev (uze@yandex.ru).
  */
-class AggregatorsTest extends Specification {
+class ObjectMergeTest extends Specification {
 
-    def collector = Aggregators.createCollector(
+    def collector = ObjectMerge.createCollector(
             [
                     'a': AggFunc.MAX,
                     'b': AggFunc.MIN,

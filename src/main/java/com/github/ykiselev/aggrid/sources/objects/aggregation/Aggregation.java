@@ -46,7 +46,7 @@ public final class Aggregation {
 
         Collector grouping = Collectors.groupingBy(
                 classifiers.get(0),
-                Aggregators.createCollector(context.indexAggregationFunctions(), typeInfo)
+                ObjectMerge.createCollector(context.indexAggregationFunctions(), typeInfo)
         );
         for (int i = 1; i < classifiers.size(); i++) {
             grouping = Collectors.groupingBy(classifiers.get(i), grouping);
@@ -179,27 +179,13 @@ public final class Aggregation {
 
     private static final class Node {
 
-        private Node parent;
-
         private final String path;
-
-        private final Object key;
 
         String getPath() {
             return path;
         }
 
-        Node getParent() {
-            return parent;
-        }
-
-        Object getKey() {
-            return key;
-        }
-
         Node(Node parent, Object key) {
-            this.parent = parent;
-            this.key = key;
             final String p = Objects.toString(key);
             this.path = parent != null ? name(parent.getPath(), p) : p;
         }

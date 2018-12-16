@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * @author Yuriy Kiselev (uze@yandex.ru).
  */
-final class Aggregators {
+final class ObjectMerge {
 
     private static final Map<AggFunc, Function<Attribute<?>, Accumulator<?>>> INT_AGGREGATORS =
             ImmutableMap.<AggFunc, Function<Attribute<?>, Accumulator<?>>>builder()
@@ -50,7 +50,7 @@ final class Aggregators {
 
     static <V> Collector<V, ?, Map<String, Object>> createCollector(Map<String, AggFunc> aggFuncs, TypeInfo<V> typeInfo) {
         return Collector.of(
-                () -> createMerge(aggFuncs, typeInfo),
+                () -> newObjectAggregator(aggFuncs, typeInfo),
                 ObjectAggregator::add,
                 ObjectAggregator::combine,
                 ObjectAggregator::finish
@@ -76,7 +76,7 @@ final class Aggregators {
     }
 
     @SuppressWarnings("unchecked")
-    private static <V> ObjectAggregator<V> createMerge(Map<String, AggFunc> columnsToMerge, TypeInfo<V> typeInfo) {
+    private static <V> ObjectAggregator<V> newObjectAggregator(Map<String, AggFunc> columnsToMerge, TypeInfo<V> typeInfo) {
         final BiFunction<String, AggFunc, Accumulator<V>> accumulatorFunction =
                 (col, aggFn) ->
                         accumulatorFor(typeInfo.getAttributes().get(col), aggFn);
@@ -89,6 +89,11 @@ final class Aggregators {
         );
     }
 
+    /**
+     * Aggregates values of single attribute of passed object.
+     *
+     * @param <V> the type parameter.
+     */
     interface Accumulator<V> {
 
         void accumulate(V value);
@@ -358,7 +363,7 @@ final class Aggregators {
     }
 
     /**
-     *
+     * Aggregates the whole object. Delegates aggregation of object's attributes to configured accumulators.
      */
     static final class ObjectAggregator<V> {
 
