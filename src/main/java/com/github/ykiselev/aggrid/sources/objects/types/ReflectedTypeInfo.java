@@ -1,16 +1,13 @@
 package com.github.ykiselev.aggrid.sources.objects.types;
 
-import com.google.common.collect.ImmutableMap;
-
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToIntFunction;
 import java.util.function.ToLongFunction;
@@ -21,36 +18,22 @@ import static java.util.Objects.requireNonNull;
 /**
  * @author Yuriy Kiselev (uze@yandex.ru).
  */
-public final class ReflectedTypeInfo<V> implements TypeInfo<V> {
+public final class ReflectedTypeInfo {
 
-    private final Map<String, Attribute<V>> attributes;
-
-    public ReflectedTypeInfo(Map<String, Attribute<V>> attributes) {
-        this.attributes = ImmutableMap.copyOf(attributes);
-    }
-
-    @Override
-    public Map<String, Attribute<V>> getAttributes() {
-        return attributes;
-    }
-
-    @Override
-    public Function<V, Map<String, Object>> toMap() {
-        return value -> {
-            final Map<String, Object> result = new HashMap<>();
-            attributes.forEach((name, attr) ->
-                    result.put(name, attr.getObjectGetter().apply(value)));
-            return result;
-        };
-    }
-
-    @SuppressWarnings("unchecked")
     public static <T> TypeInfo<T> of(Class<T> clazz) {
+        final Predicate<PropertyDescriptor> filter = p ->
+                !"class".equals(p.getName());
+        final Function<PropertyDescriptor, Attribute<T>> mapping = p ->
+                new BeanAttribute<>(
+                        p.getName(),
+                        p.getPropertyType(),
+                        p.getReadMethod()
+                );
         try {
-            return new ReflectedTypeInfo<T>(
+            return new DefaultTypeInfo<>(
                     Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
-                            .map(ReflectedTypeInfo::toAttribute)
-                            .map(a -> (Attribute<T>) a)
+                            .filter(filter)
+                            .map(mapping)
                             .collect(Collectors.toMap(
                                     Attribute::getName,
                                     Function.identity()
@@ -59,14 +42,6 @@ public final class ReflectedTypeInfo<V> implements TypeInfo<V> {
         } catch (IntrospectionException e) {
             throw new IllegalArgumentException("Unable to create type info!", e);
         }
-    }
-
-    private static Attribute<?> toAttribute(PropertyDescriptor d) {
-        return new BeanAttribute<>(
-                d.getName(),
-                d.getPropertyType(),
-                d.getReadMethod()
-        );
     }
 
     private static final class BeanAttribute<V> implements Attribute<V> {

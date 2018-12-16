@@ -5,6 +5,7 @@ import org.junit.Test;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * @author Yuriy Kiselev (uze@yandex.ru).
@@ -24,9 +25,10 @@ public class ReflectedTypeInfoTest {
         assertEquals(3d, attrs.get("sum").getObjectGetter().apply(bean));
         assertEquals(4f, attrs.get("x").getDoubleGetter().applyAsDouble(bean), 0.0001f);
         assertEquals((short) 5, attrs.get("y").getIntGetter().applyAsInt(bean));
+        assertFalse(attrs.containsKey("class"));
     }
 
-    public static class MyBean {
+    static class MyBean {
 
         private final long id;
 
@@ -64,7 +66,7 @@ public class ReflectedTypeInfoTest {
             return y;
         }
 
-        public MyBean(long id, String name, double amount, Double sum, float x, short y) {
+        MyBean(long id, String name, double amount, Double sum, float x, short y) {
             this.id = id;
             this.name = name;
             this.amount = amount;
