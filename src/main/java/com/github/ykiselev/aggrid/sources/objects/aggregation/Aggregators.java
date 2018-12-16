@@ -1,11 +1,11 @@
 package com.github.ykiselev.aggrid.sources.objects.aggregation;
 
 import com.github.ykiselev.aggrid.domain.request.AggFunc;
-import com.github.ykiselev.aggrid.sources.Context;
 import com.github.ykiselev.aggrid.sources.objects.types.Attribute;
 import com.github.ykiselev.aggrid.sources.objects.types.TypeInfo;
 import com.google.common.collect.ImmutableMap;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.DoubleBinaryOperator;
@@ -16,7 +16,6 @@ import java.util.function.ToDoubleFunction;
 import java.util.function.ToIntFunction;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -49,17 +48,9 @@ final class Aggregators {
                     .put(AggFunc.MAX, a -> maxDouble(a.getName(), a.getDoubleGetter()))
                     .build();
 
-    static <V> Collector<V, ?, Map<String, Object>> createCollector(Context context, TypeInfo<V> typeInfo) {
-        final Map<String, AggFunc> aggColumns = context.getColumnsToMerge()
-                .stream()
-                .filter(col -> context.getColumn(col).getAggFunc() != null)
-                .collect(Collectors.toMap(
-                        Function.identity(),
-                        col -> context.getColumn(col).getAggFunc()
-                ));
-
+    static <V> Collector<V, ?, Map<String, Object>> createCollector(Map<String, AggFunc> aggFuncs, TypeInfo<V> typeInfo) {
         return Collector.of(
-                () -> createMerge(aggColumns, typeInfo),
+                () -> createMerge(aggFuncs, typeInfo),
                 ObjectAggregator::add,
                 ObjectAggregator::combine,
                 ObjectAggregator::finish
@@ -73,7 +64,7 @@ final class Aggregators {
             function = DOUBLE_AGGREGATORS.get(aggFn);
         } else if (attr.getType() == int.class) {
             function = INT_AGGREGATORS.get(aggFn);
-        } else if (attr.getType() == int.class) {
+        } else if (attr.getType() == long.class) {
             function = LONG_AGGREGATORS.get(aggFn);
         } else {
             function = null;
@@ -105,6 +96,80 @@ final class Aggregators {
         void combine(Accumulator<V> other);
 
         void finish(int count, Map<String, Object> target);
+
+        boolean isEmpty();
+    }
+
+    static abstract class AbstractAccumulator<V> implements Accumulator<V> {
+
+        private final String name;
+
+        private boolean empty = true;
+
+        String getName() {
+            return name;
+        }
+
+        @Override
+        public final boolean isEmpty() {
+            return empty;
+        }
+
+        AbstractAccumulator(String name) {
+            this.name = requireNonNull(name);
+        }
+
+        @Override
+        public final void accumulate(V value) {
+            if (empty) {
+                accumulateFirst(value);
+                empty = false;
+            } else {
+                accumulateMore(value);
+            }
+        }
+
+        /**
+         * Called from {@link AbstractAccumulator#accumulate} method when this accumulator is non-empty.
+         *
+         * @param value the value to accumulate.
+         */
+        abstract void accumulateMore(V value);
+
+        /**
+         * Called from {@link AbstractAccumulator#accumulate} method when this accumulator is empty.
+         *
+         * @param value the value to accumulate.
+         */
+        abstract void accumulateFirst(V value);
+
+        @Override
+        public final void combine(Accumulator<V> other) {
+            if (empty) {
+                if (!other.isEmpty()) {
+                    setFromNonEmpty(other);
+                    empty = false;
+                }
+            } else {
+                if (!other.isEmpty()) {
+                    combineWithNonEmpty(other);
+                }
+            }
+        }
+
+        /**
+         * Called from {@link AbstractAccumulator#combine} method when both this and other accumulators are non empty.
+         *
+         * @param other the other accumulator of the same type
+         */
+        abstract void combineWithNonEmpty(Accumulator<V> other);
+
+        /**
+         * Called from {@link AbstractAccumulator#combine} method when this accumulator is empty but other is not.
+         *
+         * @param other the other accumulator of the same type
+         */
+        abstract void setFromNonEmpty(Accumulator<V> other);
     }
 
     private static <V> IntAccumulator<V> summingInt(String name, ToIntFunction<V> getter) {
@@ -123,9 +188,7 @@ final class Aggregators {
         return new IntAccumulator<>(name, getter, Math::max, (acc, count) -> acc);
     }
 
-    static final class IntAccumulator<V> implements Accumulator<V> {
-
-        private final String name;
+    static final class IntAccumulator<V> extends AbstractAccumulator<V> {
 
         private final ToIntFunction<V> getter;
 
@@ -136,25 +199,37 @@ final class Aggregators {
         private int acc;
 
         IntAccumulator(String name, ToIntFunction<V> getter, IntBinaryOperator accumulator, IntBinaryOperator finalizer) {
-            this.name = requireNonNull(name);
+            super(name);
             this.getter = requireNonNull(getter);
             this.accumulator = requireNonNull(accumulator);
             this.finalizer = requireNonNull(finalizer);
         }
 
         @Override
-        public void accumulate(V value) {
+        void accumulateMore(V value) {
             acc = accumulator.applyAsInt(acc, getter.applyAsInt(value));
         }
 
         @Override
-        public void combine(Accumulator<V> other) {
+        void accumulateFirst(V value) {
+            acc = getter.applyAsInt(value);
+        }
+
+        @Override
+        void combineWithNonEmpty(Accumulator<V> other) {
             acc = accumulator.applyAsInt(acc, ((IntAccumulator<?>) other).acc);
         }
 
         @Override
+        void setFromNonEmpty(Accumulator<V> other) {
+            acc = ((IntAccumulator<?>) other).acc;
+        }
+
+        @Override
         public void finish(int count, Map<String, Object> target) {
-            target.put(name, finalizer.applyAsInt(acc, count));
+            if (!isEmpty()) {
+                target.put(getName(), finalizer.applyAsInt(acc, count));
+            }
         }
     }
 
@@ -174,9 +249,7 @@ final class Aggregators {
         return new LongAccumulator<>(name, getter, Math::max, (acc, count) -> acc);
     }
 
-    static final class LongAccumulator<V> implements Accumulator<V> {
-
-        private final String name;
+    static final class LongAccumulator<V> extends AbstractAccumulator<V> {
 
         private final ToLongFunction<V> getter;
 
@@ -187,25 +260,37 @@ final class Aggregators {
         private long acc;
 
         LongAccumulator(String name, ToLongFunction<V> getter, LongBinaryOperator accumulator, LongBinaryOperator finalizer) {
-            this.name = requireNonNull(name);
+            super(name);
             this.getter = requireNonNull(getter);
             this.accumulator = requireNonNull(accumulator);
             this.finalizer = requireNonNull(finalizer);
         }
 
         @Override
-        public void accumulate(V value) {
+        void accumulateFirst(V value) {
+            acc = getter.applyAsLong(value);
+        }
+
+        @Override
+        void accumulateMore(V value) {
             acc = accumulator.applyAsLong(acc, getter.applyAsLong(value));
         }
 
         @Override
-        public void combine(Accumulator<V> other) {
+        void setFromNonEmpty(Accumulator<V> other) {
+            acc = ((LongAccumulator<?>) other).acc;
+        }
+
+        @Override
+        void combineWithNonEmpty(Accumulator<V> other) {
             acc = accumulator.applyAsLong(acc, ((LongAccumulator<?>) other).acc);
         }
 
         @Override
         public void finish(int count, Map<String, Object> target) {
-            target.put(name, finalizer.applyAsLong(acc, count));
+            if (!isEmpty()) {
+                target.put(getName(), finalizer.applyAsLong(acc, count));
+            }
         }
     }
 
@@ -225,9 +310,7 @@ final class Aggregators {
         return new DoubleAccumulator<>(name, getter, Math::max, (acc, count) -> acc);
     }
 
-    static final class DoubleAccumulator<V> implements Accumulator<V> {
-
-        private final String name;
+    static final class DoubleAccumulator<V> extends AbstractAccumulator<V> {
 
         private final ToDoubleFunction<V> getter;
 
@@ -237,26 +320,40 @@ final class Aggregators {
 
         private double acc;
 
+        private boolean empty = true;
+
         DoubleAccumulator(String name, ToDoubleFunction<V> getter, DoubleBinaryOperator accumulator, DoubleBinaryOperator finalizer) {
-            this.name = requireNonNull(name);
+            super(name);
             this.getter = requireNonNull(getter);
             this.accumulator = requireNonNull(accumulator);
             this.finalizer = requireNonNull(finalizer);
         }
 
         @Override
-        public void accumulate(V value) {
+        void accumulateFirst(V value) {
+            acc = getter.applyAsDouble(value);
+        }
+
+        @Override
+        void accumulateMore(V value) {
             acc = accumulator.applyAsDouble(acc, getter.applyAsDouble(value));
         }
 
         @Override
-        public void combine(Accumulator<V> other) {
+        void setFromNonEmpty(Accumulator<V> other) {
+            acc = ((DoubleAccumulator<?>) other).acc;
+        }
+
+        @Override
+        void combineWithNonEmpty(Accumulator<V> other) {
             acc = accumulator.applyAsDouble(acc, ((DoubleAccumulator<?>) other).acc);
         }
 
         @Override
         public void finish(int count, Map<String, Object> target) {
-            target.put(name, finalizer.applyAsDouble(acc, count));
+            if (!isEmpty()) {
+                target.put(getName(), finalizer.applyAsDouble(acc, count));
+            }
         }
     }
 
@@ -304,6 +401,9 @@ final class Aggregators {
         }
 
         Map<String, Object> finish() {
+            if (first == null) {
+                return Collections.emptyMap();
+            }
             final Map<String, Object> result = toMap.apply(first);
             for (Accumulator<V> aggregator : accumulators) {
                 aggregator.finish(counter, result);

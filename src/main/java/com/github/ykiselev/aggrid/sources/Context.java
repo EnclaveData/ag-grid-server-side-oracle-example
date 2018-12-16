@@ -1,6 +1,7 @@
 package com.github.ykiselev.aggrid.sources;
 
 import com.github.ykiselev.aggrid.domain.request.AgGridGetRowsRequest;
+import com.github.ykiselev.aggrid.domain.request.AggFunc;
 import com.github.ykiselev.aggrid.domain.request.ColumnVO;
 import com.github.ykiselev.aggrid.domain.response.AgGridGetRowsResponse;
 import com.github.ykiselev.aggrid.sources.objects.aggregation.Aggregation;
@@ -14,6 +15,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -89,7 +92,7 @@ public final class Context {
         this.pivotColumns = requireNonNull(pivotColumns);
         this.columns = requireNonNull(columns);
         this.columnsToMerge = ImmutableSet.<String>builder()
-                .addAll(groupByColumns)
+                //.addAll(groupByColumns)
                 .addAll(valueColumns)
                 .build();
     }
@@ -117,6 +120,16 @@ public final class Context {
         final int currentLastRow = request.getStartRow() + rows.size();
         final int lastRow = currentLastRow <= request.getEndRow() ? currentLastRow : -1;
         return new AgGridGetRowsResponse(rows, lastRow, new ArrayList<>(secondaryColumns));
+    }
+
+    public Map<String, AggFunc> indexAggregationFunctions() {
+        return getColumnsToMerge()
+                .stream()
+                .filter(col -> getColumn(col).getAggFunc() != null)
+                .collect(Collectors.toMap(
+                        Function.identity(),
+                        col -> getColumn(col).getAggFunc()
+                ));
     }
 
     public static Context create(AgGridGetRowsRequest request) {

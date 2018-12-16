@@ -46,7 +46,7 @@ public final class Aggregation {
 
         Collector grouping = Collectors.groupingBy(
                 classifiers.get(0),
-                Aggregators.createCollector(context, typeInfo)
+                Aggregators.createCollector(context.indexAggregationFunctions(), typeInfo)
         );
         for (int i = 1; i < classifiers.size(); i++) {
             grouping = Collectors.groupingBy(classifiers.get(i), grouping);

@@ -6,6 +6,7 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
@@ -20,7 +21,27 @@ import static java.util.Objects.requireNonNull;
  */
 public final class ReflectedTypeInfo {
 
+    /**
+     * Creates instance of {@link TypeInfo} populated with attributes of specified class.
+     *
+     * @param clazz the class to create type info for.
+     * @param <T>   the type parameter.
+     * @return the type info.
+     */
     public static <T> TypeInfo<T> of(Class<T> clazz) {
+        return new DefaultTypeInfo<>(
+                attributesOf(clazz)
+        );
+    }
+
+    /**
+     * Builds map of attributes for a given class.
+     *
+     * @param clazz the class to build attributes for
+     * @param <T>   the type parameter
+     * @return the map of attribute names mapped to attributes
+     */
+    public static <T> Map<String, Attribute<T>> attributesOf(Class<T> clazz) {
         final Predicate<PropertyDescriptor> filter = p ->
                 !"class".equals(p.getName());
         final Function<PropertyDescriptor, Attribute<T>> mapping = p ->
@@ -30,15 +51,13 @@ public final class ReflectedTypeInfo {
                         p.getReadMethod()
                 );
         try {
-            return new DefaultTypeInfo<>(
-                    Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
-                            .filter(filter)
-                            .map(mapping)
-                            .collect(Collectors.toMap(
-                                    Attribute::getName,
-                                    Function.identity()
-                            ))
-            );
+            return Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
+                    .filter(filter)
+                    .map(mapping)
+                    .collect(Collectors.toMap(
+                            Attribute::getName,
+                            Function.identity()
+                    ));
         } catch (IntrospectionException e) {
             throw new IllegalArgumentException("Unable to create type info!", e);
         }
@@ -88,15 +107,13 @@ public final class ReflectedTypeInfo {
             return v -> invoke(v, Function.identity());
         }
 
-        @SuppressWarnings("unchecked")
         private <I, R> R invoke(V instance, Function<I, R> mapper) {
-            final Object raw;
             try {
-                raw = getter.invoke(instance);
+                @SuppressWarnings("unchecked") final I value = (I) getter.invoke(instance);
+                return value != null ? mapper.apply(value) : null;
             } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
-            return raw != null ? mapper.apply((I) raw) : null;
         }
     }
 }
