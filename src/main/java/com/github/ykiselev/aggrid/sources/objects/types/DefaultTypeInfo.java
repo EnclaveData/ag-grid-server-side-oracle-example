@@ -2,9 +2,11 @@ package com.github.ykiselev.aggrid.sources.objects.types;
 
 import com.google.common.collect.ImmutableMap;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author Yuriy Kiselev (uze@yandex.ru).
@@ -15,6 +17,16 @@ public final class DefaultTypeInfo<V> implements TypeInfo<V> {
 
     public DefaultTypeInfo(Map<String, Attribute<V>> attributes) {
         this.attributes = ImmutableMap.copyOf(attributes);
+    }
+
+    public DefaultTypeInfo(Collection<Attribute<V>> attributes) {
+        this.attributes = ImmutableMap.copyOf(
+                attributes.stream()
+                        .collect(Collectors.toMap(
+                                Attribute::getName,
+                                a -> a
+                        ))
+        );
     }
 
     @Override

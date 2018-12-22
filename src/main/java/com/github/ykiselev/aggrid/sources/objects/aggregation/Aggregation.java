@@ -114,7 +114,7 @@ public final class Aggregation {
         }
 
         /**
-         * Convert a single tree formed by values grouped by pivot column values.<p/>
+         * Converts (transposes) a single tree formed by values grouped by pivot column values.<p/>
          * For example if we have two pivot columns A=("a1") and B=("b1","b2") and 3 value columns X,Y,Z then input entry will be a tree of maps:
          * <pre>
          *  a1
@@ -132,7 +132,7 @@ public final class Aggregation {
          * <pre>
          *   a1_b1_x=x1, a1_b1_y=y1, a1_b1_z=z1, a1_b2_x=x2, a1_b2_y=y2, a1_b2_z=z2
          * </pre>
-         * Please note that normal grouping is processed before that step.
+         * Please note that general grouping is processed before that step.
          *
          * @param row the map entry containing the tree to convert to rows, key is the first pivot column value, and value
          * @return the stream of maps containing final columns with values
