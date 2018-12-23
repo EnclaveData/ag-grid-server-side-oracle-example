@@ -4,6 +4,7 @@ import com.github.ykiselev.ag.grid.api.filter.GroupKey
 import com.github.ykiselev.ag.grid.api.filter.TextColumnFilter
 import com.github.ykiselev.ag.grid.api.request.AgGridGetRowsRequest
 import com.github.ykiselev.ag.grid.api.request.ColumnVO
+import com.github.ykiselev.ag.grid.data.DefaultRequestFilters
 import spock.lang.Specification
 
 /**

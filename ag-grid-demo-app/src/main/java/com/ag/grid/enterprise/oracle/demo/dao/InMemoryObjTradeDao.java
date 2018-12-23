@@ -4,15 +4,15 @@ import com.ag.grid.enterprise.oracle.demo.domain.Trade;
 import com.github.ykiselev.ag.grid.api.filter.ColumnFilter;
 import com.github.ykiselev.ag.grid.api.request.AgGridGetRowsRequest;
 import com.github.ykiselev.ag.grid.api.response.AgGridGetRowsResponse;
-import com.github.ykiselev.ag.grid.data.sources.AgGridRowSource;
-import com.github.ykiselev.ag.grid.data.sources.RequestFilters;
-import com.github.ykiselev.ag.grid.data.sources.objects.FilteredObjectSource;
-import com.github.ykiselev.ag.grid.data.sources.objects.ObjectSource;
-import com.github.ykiselev.ag.grid.data.sources.objects.ObjectSourceBasedAgGridRowSource;
-import com.github.ykiselev.ag.grid.data.sources.objects.Predicates;
-import com.github.ykiselev.ag.grid.data.sources.objects.types.Attribute;
-import com.github.ykiselev.ag.grid.data.sources.objects.types.ReflectedTypeInfo;
-import com.github.ykiselev.ag.grid.data.sources.objects.types.TypeInfo;
+import com.github.ykiselev.ag.grid.data.AgGridRowSource;
+import com.github.ykiselev.ag.grid.data.RequestFilters;
+import com.github.ykiselev.ag.grid.data.objects.FilteredObjectSource;
+import com.github.ykiselev.ag.grid.data.objects.ObjectSource;
+import com.github.ykiselev.ag.grid.data.objects.ObjectSourceBasedAgGridRowSource;
+import com.github.ykiselev.ag.grid.data.objects.Predicates;
+import com.github.ykiselev.ag.grid.data.types.Attribute;
+import com.github.ykiselev.ag.grid.data.types.ReflectedTypeInfo;
+import com.github.ykiselev.ag.grid.data.types.TypeInfo;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.PostConstruct;
@@ -131,12 +131,12 @@ public class InMemoryObjTradeDao implements TradeDao {
                                     .filter(valuePredicate)
                                     .collect(Collectors.toList());
                         }
-                    };
-                }
 
-                @Override
-                public TypeInfo<Trade> getTypeInfo() {
-                    return typeInfo;
+                        @Override
+                        public TypeInfo<Trade> getTypeInfo() {
+                            return typeInfo;
+                        }
+                    };
                 }
             },
             5_000
