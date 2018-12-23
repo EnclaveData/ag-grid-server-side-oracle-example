@@ -1,7 +1,4 @@
-package com.github.ykiselev.ag.grid.data.objects;
-
-import com.github.ykiselev.ag.grid.data.RequestFilters;
-import com.github.ykiselev.ag.grid.data.types.TypeInfo;
+package com.github.ykiselev.ag.grid.data;
 
 /**
  * @author Yuriy Kiselev (uze@yandex.ru).

@@ -1,4 +1,4 @@
-package com.github.ykiselev.ag.grid.data.objects;
+package com.github.ykiselev.ag.grid.data.common;
 
 import com.github.ykiselev.ag.grid.api.filter.ColumnFilter;
 import com.github.ykiselev.ag.grid.api.filter.GroupKey;

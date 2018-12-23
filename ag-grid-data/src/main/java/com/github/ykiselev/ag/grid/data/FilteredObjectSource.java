@@ -1,6 +1,5 @@
-package com.github.ykiselev.ag.grid.data.objects;
+package com.github.ykiselev.ag.grid.data;
 
-import com.github.ykiselev.ag.grid.data.RequestFilters;
 import com.github.ykiselev.ag.grid.data.types.TypeInfo;
 
 import java.util.Collection;

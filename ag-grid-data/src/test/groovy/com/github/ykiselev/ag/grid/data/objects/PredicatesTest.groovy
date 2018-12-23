@@ -4,6 +4,7 @@ import com.github.ykiselev.ag.grid.api.filter.GroupKey
 import com.github.ykiselev.ag.grid.api.filter.NumberColumnFilter
 import com.github.ykiselev.ag.grid.api.filter.SetColumnFilter
 import com.github.ykiselev.ag.grid.api.filter.TextColumnFilter
+import com.github.ykiselev.ag.grid.data.common.Predicates
 import com.github.ykiselev.ag.grid.data.types.Attribute
 import spock.lang.Specification
 import spock.lang.Unroll

@@ -1,15 +1,12 @@
-package com.github.ykiselev.ag.grid.data.objects;
+package com.github.ykiselev.ag.grid.data;
 
 import com.github.ykiselev.ag.grid.api.request.AgGridGetRowsRequest;
 import com.github.ykiselev.ag.grid.api.request.SortModel;
 import com.github.ykiselev.ag.grid.api.request.Sorting;
 import com.github.ykiselev.ag.grid.api.response.AgGridGetRowsResponse;
-import com.github.ykiselev.ag.grid.data.AgGridRowSource;
-import com.github.ykiselev.ag.grid.data.Context;
-import com.github.ykiselev.ag.grid.data.DefaultRequestFilters;
-import com.github.ykiselev.ag.grid.data.RequestFilters;
 import com.github.ykiselev.ag.grid.data.aggregation.Aggregation;
 import com.github.ykiselev.ag.grid.data.common.MapUtils;
+import com.github.ykiselev.ag.grid.data.common.Predicates;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
