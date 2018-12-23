@@ -1,6 +1,7 @@
 package com.github.ykiselev.ag.grid.data.sources.objects.types;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -8,7 +9,11 @@ import java.util.function.Function;
  */
 public interface TypeInfo<V> {
 
-    Map<String, Attribute<V>> getAttributes();
+    Set<String> getNames();
 
-    Function<V,Map<String,Object>> toMap();
+    boolean hasName(String name);
+
+    Attribute<V> getAttribute(String name);
+
+    Function<V, Map<String, Object>> toMap();
 }

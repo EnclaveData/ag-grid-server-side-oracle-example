@@ -22,9 +22,8 @@ import static java.util.Objects.requireNonNull;
 public final class Aggregation {
 
     private static <V> Collector<V, ?, Map> create(Context context, TypeInfo<V> typeInfo) {
-        final Map<String, Attribute<V>> attrs = typeInfo.getAttributes();
         final Function<String, Function<V, ?>> getterFactory =
-                col -> attrs.get(col).getObjectGetter();
+                col -> typeInfo.getAttribute(col).getObjectGetter();
 
         final Stream<String> classifierColumns;
         if (context.isPivot()) {

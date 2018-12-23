@@ -42,8 +42,7 @@ public class TypeInfoBuilderTest {
     private Attribute<A> attr(UnaryOperator<TypeInfoBuilder<A>> op, String name) {
         return op.apply(new TypeInfoBuilder<>())
                 .build()
-                .getAttributes()
-                .get(name);
+                .getAttribute(name);
     }
 
     private ToIntFunction<A> intGetter(UnaryOperator<TypeInfoBuilder<A>> op, String name) {

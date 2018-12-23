@@ -79,7 +79,7 @@ final class ObjectMerge {
     private static <V> ObjectAggregator<V> newObjectAggregator(Map<String, AggFunc> columnsToMerge, TypeInfo<V> typeInfo) {
         final BiFunction<String, AggFunc, Accumulator<V>> accumulatorFunction =
                 (col, aggFn) ->
-                        accumulatorFor(typeInfo.getAttributes().get(col), aggFn);
+                        accumulatorFor(typeInfo.getAttribute(col), aggFn);
         return new ObjectAggregator<>(
                 typeInfo.toMap(),
                 columnsToMerge.entrySet()

@@ -93,7 +93,7 @@ public final class ObjectSourceBasedAgGridRowSource<K, V> implements AgGridRowSo
         private Predicate<V> filter(Set<String> columns, RequestFilters filters) {
             final Function<String, Predicate<V>> factory = col ->
                     Predicates.predicate(
-                            source.getTypeInfo().getAttributes().get(col),
+                            source.getTypeInfo().getAttribute(col),
                             filters.getColumnFilter(col)
                     );
             return columns.stream()
