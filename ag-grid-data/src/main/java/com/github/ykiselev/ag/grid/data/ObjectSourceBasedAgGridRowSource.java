@@ -67,7 +67,7 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
             final Set<String> toFilter =
                     Sets.difference(filters.getNames(), source.getFilteredNames());
             final Predicate<V> predicate = filter(toFilter, filters);
-            return source.getAll(filters)
+            return source.getAll(filters, context)
                     .filter(predicate);
         }
 
@@ -105,8 +105,16 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
         }
 
         private <T> List<T> limit(Stream<T> src) {
-            return src.skip(context.getRequest().getStartRow())
-                    .limit(context.getRequest().getEndRow() + 1)
+            final int skipRows, limitRows;
+            if (context.isOffsetApplied()){
+                skipRows = 0;
+                limitRows = context.getRequest().getEndRow() + 1 - context.getRequest().getStartRow();
+            } else {
+                skipRows = context.getRequest().getStartRow();
+                limitRows = context.getRequest().getEndRow() + 1;
+            }
+            return src.skip(skipRows)
+                    .limit(limitRows)
                     .collect(Collectors.toList());
         }
     }

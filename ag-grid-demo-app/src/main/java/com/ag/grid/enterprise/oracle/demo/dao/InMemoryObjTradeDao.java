@@ -6,6 +6,7 @@ import com.github.ykiselev.ag.grid.api.filter.ColumnFilter;
 import com.github.ykiselev.ag.grid.api.request.AgGridGetRowsRequest;
 import com.github.ykiselev.ag.grid.api.response.AgGridGetRowsResponse;
 import com.github.ykiselev.ag.grid.data.AgGridRowSource;
+import com.github.ykiselev.ag.grid.data.Context;
 import com.github.ykiselev.ag.grid.data.ObjectSource;
 import com.github.ykiselev.ag.grid.data.ObjectSourceBasedAgGridRowSource;
 import com.github.ykiselev.ag.grid.data.RequestFilters;
@@ -46,7 +47,7 @@ public class InMemoryObjTradeDao implements TradeDao {
                 }
 
                 @Override
-                public Stream<Trade> getAll(RequestFilters filters) {
+                public Stream<Trade> getAll(RequestFilters filters, Context context) {
                     final ColumnFilter keyFilter = filters.getColumnFilter("portfolio");
                     if (keyFilter != null) {
                         return tradesByPortfolio.get()

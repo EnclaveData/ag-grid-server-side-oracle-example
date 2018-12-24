@@ -43,6 +43,16 @@ public final class Context {
 
     private final Set<String> secondaryColumns = new HashSet<>();
 
+    private boolean offsetApplied;
+
+    public boolean isOffsetApplied() {
+        return offsetApplied;
+    }
+
+    public void setOffsetApplied(boolean offsetApplied) {
+        this.offsetApplied = offsetApplied;
+    }
+
     public boolean isPivot() {
         return isPivot;
     }

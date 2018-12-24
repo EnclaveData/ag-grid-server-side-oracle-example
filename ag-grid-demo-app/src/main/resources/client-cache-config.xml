@@ -16,6 +16,22 @@
 
     <caching-schemes>
 
+        <near-scheme>
+            <scheme-name>client-near</scheme-name>
+            <front-scheme>
+                <local-scheme>
+                    <scheme-name>LocalMemoryScheme</scheme-name>
+                    <expiry-delay>5m</expiry-delay>
+                    <high-units>500000</high-units>
+                </local-scheme>
+            </front-scheme>
+            <back-scheme>
+                <remote-cache-scheme>
+                    <scheme-ref>remote</scheme-ref>
+                </remote-cache-scheme>
+            </back-scheme>
+        </near-scheme>
+
         <remote-cache-scheme>
             <scheme-name>remote</scheme-name>
             <service-name>ExtendTcpCacheService</service-name>
@@ -27,10 +43,10 @@
                             <port>33100</port>
                         </socket-address>
                     </remote-addresses>
-                    <connect-timeout>600s</connect-timeout>
+                    <connect-timeout>60s</connect-timeout>
                 </tcp-initiator>
                 <outgoing-message-handler>
-                    <request-timeout>600s</request-timeout>
+                    <request-timeout>60s</request-timeout>
                 </outgoing-message-handler>
             </initiator-config>
             <defer-key-association-check>true</defer-key-association-check>
@@ -47,7 +63,7 @@
                             <port>33100</port>
                         </socket-address>
                     </remote-addresses>
-                    <connect-timeout>600s</connect-timeout>
+                    <connect-timeout>60s</connect-timeout>
                 </tcp-initiator>
                 <outgoing-message-handler>
                     <request-timeout>600s</request-timeout>
