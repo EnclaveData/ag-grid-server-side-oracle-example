@@ -3,6 +3,7 @@ package com.ag.grid.enterprise.oracle.demo.builder;
 import com.ag.grid.enterprise.oracle.demo.domain.Trade;
 import com.github.ykiselev.ag.grid.api.filter.ColumnFilter;
 import com.github.ykiselev.ag.grid.api.filter.NumberColumnFilter;
+import com.github.ykiselev.ag.grid.api.filter.NumberFilterType;
 import com.github.ykiselev.ag.grid.api.filter.SetColumnFilter;
 import com.github.ykiselev.ag.grid.api.request.AgGridGetRowsRequest;
 import com.github.ykiselev.ag.grid.api.request.ColumnVO;
@@ -39,13 +40,13 @@ import static java.util.stream.Stream.concat;
  */
 public class CohQueryBuilder {
 
-    private static final Map<String, String> operatorMap = ImmutableMap.<String, String>builder()
-            .put("equals", "=")
-            .put("notEqual", "<>")
-            .put("lessThan", "<")
-            .put("lessThanOrEqual", "<=")
-            .put("greaterThan", ">")
-            .put("greaterThanOrEqual", ">=")
+    private Map<NumberFilterType, String> numberOperatorMap = ImmutableMap.<NumberFilterType, String>builder()
+            .put(NumberFilterType.EQUALS, "=")
+            .put(NumberFilterType.NOT_EQUAL, "<>")
+            .put(NumberFilterType.LESS_THAN, "<")
+            .put(NumberFilterType.LESS_THAN_OR_EQUAL, "<=")
+            .put(NumberFilterType.GREATER_THAN, ">")
+            .put(NumberFilterType.GREATER_THAN_OR_EQUAL, ">=")
             .build();
 
     private static final Map<String, String> COLUMN2PROPERTY;
@@ -184,10 +185,10 @@ public class CohQueryBuilder {
     private BiFunction<String, NumberColumnFilter, String> numberFilter() {
         return (String columnName, NumberColumnFilter filter) -> {
             Integer filterValue = filter.getFilter();
-            String filerType = filter.getType();
-            String operator = operatorMap.get(filerType);
+            NumberFilterType filerType = filter.getType();
+            String operator = numberOperatorMap.get(filerType);
 
-            return columnName + (filerType.equals("inRange") ?
+            return columnName + (filerType == NumberFilterType.IN_RANGE ?
                     " BETWEEN " + filterValue + " AND " + filter.getFilterTo() : " " + operator + " " + filterValue);
         };
     }

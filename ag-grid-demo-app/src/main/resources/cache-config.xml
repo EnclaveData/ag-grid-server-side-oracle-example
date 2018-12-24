@@ -9,6 +9,11 @@
             <scheme-name>near</scheme-name>
         </cache-mapping>
 
+        <cache-mapping>
+            <cache-name>Portfolios</cache-name>
+            <scheme-name>near</scheme-name>
+        </cache-mapping>
+
     </caching-scheme-mapping>
 
     <caching-schemes>

@@ -1,9 +1,6 @@
 package com.github.ykiselev.ag.grid.data.objects
 
-import com.github.ykiselev.ag.grid.api.filter.GroupKey
-import com.github.ykiselev.ag.grid.api.filter.NumberColumnFilter
-import com.github.ykiselev.ag.grid.api.filter.SetColumnFilter
-import com.github.ykiselev.ag.grid.api.filter.TextColumnFilter
+import com.github.ykiselev.ag.grid.api.filter.*
 import com.github.ykiselev.ag.grid.data.common.Predicates
 import com.github.ykiselev.ag.grid.data.types.Attribute
 import spock.lang.Specification
@@ -31,20 +28,20 @@ class PredicatesTest extends Specification {
         res == exp
 
         where:
-        cft                  | cff | exp
-        'equals'             | 5   | [5]
-        'notEqual'           | 5   | [1, 7]
-        'lessThan'           | 7   | [1, 5]
-        'lessThanOrEqual'    | 5   | [1, 5]
-        'greaterThan'        | 5   | [7]
-        'greaterThanOrEqual' | 5   | [5, 7]
+        cft                                    | cff | exp
+        NumberFilterType.EQUALS                | 5   | [5]
+        NumberFilterType.NOT_EQUAL             | 5   | [1, 7]
+        NumberFilterType.LESS_THAN             | 7   | [1, 5]
+        NumberFilterType.LESS_THAN_OR_EQUAL    | 5   | [1, 5]
+        NumberFilterType.GREATER_THAN          | 5   | [7]
+        NumberFilterType.GREATER_THAN_OR_EQUAL | 5   | [5, 7]
     }
 
     def "should filter by number in range"() {
         given:
         def attr = Mock(Attribute)
         attr.getIntGetter() >> ({ v -> v } as ToIntFunction)
-        def p = Predicates.predicate(attr, new NumberColumnFilter('inRange', 2, 6))
+        def p = Predicates.predicate(attr, new NumberColumnFilter(NumberFilterType.IN_RANGE, 2, 6))
 
         when:
         def res = [1, 2, 5, 6, 7].findAll { v -> p.test(v) }
@@ -67,13 +64,13 @@ class PredicatesTest extends Specification {
         res == exp
 
         where:
-        cft           | cff   | exp
-        'equals'      | 'abc' | ['abc']
-        'notEqual'    | 'abc' | ['bcd', 'cde', null]
-        'contains'    | 'a'   | ['abc']
-        'notContains' | 'a'   | ['bcd', 'cde', null]
-        'startsWith'  | 'bc'  | ['bcd']
-        'endsWith'    | 'bc'  | ['abc']
+        cft                         | cff   | exp
+        TextFilterType.EQUALS       | 'abc' | ['abc']
+        TextFilterType.NOT_EQUAL    | 'abc' | ['bcd', 'cde', null]
+        TextFilterType.CONTAINS     | 'a'   | ['abc']
+        TextFilterType.NOT_CONTAINS | 'a'   | ['bcd', 'cde', null]
+        TextFilterType.STARTS_WITH  | 'bc'  | ['bcd']
+        TextFilterType.ENDS_WITH    | 'bc'  | ['abc']
     }
 
     def "should filter by set"() {

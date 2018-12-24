@@ -118,7 +118,7 @@ public final class Context {
     public AgGridGetRowsResponse createResponse(List<Map<String, Object>> rows) {
         final int currentLastRow = request.getStartRow() + rows.size();
         final int lastRow = currentLastRow <= request.getEndRow() ? currentLastRow : -1;
-        return new AgGridGetRowsResponse(rows, lastRow, new ArrayList<>(secondaryColumns));
+        return new AgGridGetRowsResponse<>(rows, lastRow, new ArrayList<>(secondaryColumns));
     }
 
     public Map<String, AggFunc> indexAggregationFunctions() {

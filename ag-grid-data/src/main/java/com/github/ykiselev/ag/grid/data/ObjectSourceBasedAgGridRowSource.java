@@ -7,10 +7,8 @@ import com.github.ykiselev.ag.grid.api.response.AgGridGetRowsResponse;
 import com.github.ykiselev.ag.grid.data.aggregation.Aggregation;
 import com.github.ykiselev.ag.grid.data.common.MapUtils;
 import com.github.ykiselev.ag.grid.data.common.Predicates;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +17,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static java.util.Comparator.naturalOrder;
 import static java.util.Comparator.nullsFirst;
@@ -28,44 +25,29 @@ import static java.util.Objects.requireNonNull;
 /**
  * @author Yuriy Kiselev (uze@yandex.ru).
  */
-public final class ObjectSourceBasedAgGridRowSource<K, V> implements AgGridRowSource {
+public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSource {
 
-    private final ObjectSource<K, V> source;
+    private final ObjectSource<V> source;
 
-    private final int batchSize;
-
-    public ObjectSourceBasedAgGridRowSource(ObjectSource<K, V> source, int batchSize) {
+    public ObjectSourceBasedAgGridRowSource(ObjectSource<V> source) {
         this.source = requireNonNull(source);
-        this.batchSize = batchSize;
     }
 
     @Override
     public AgGridGetRowsResponse getRows(AgGridGetRowsRequest request) {
-        final Context context = Context.create(request);
-        final RequestFilters filters = DefaultRequestFilters.create(context.getRequest());
-        return new ResponseBuilder(
-                context,
-                source.filter(filters),
-                filters
-        ).build();
+        return new ResponseBuilder(Context.create(request)).build();
     }
 
     private final class ResponseBuilder {
 
         private final Context context;
 
-        private final FilteredObjectSource<K, V> source;
-
-        private final RequestFilters filters;
-
-        ResponseBuilder(Context context, FilteredObjectSource<K, V> source, RequestFilters filters) {
+        ResponseBuilder(Context context) {
             this.context = requireNonNull(context);
-            this.source = requireNonNull(source);
-            this.filters = requireNonNull(filters);
         }
 
         AgGridGetRowsResponse build() {
-            final Stream<V> rows = getFilteredRows(batchSize);
+            final Stream<V> rows = getFilteredRows();
             final Stream<Map<String, Object>> result;
             if (context.isGrouping() || context.isPivot()) {
                 result = Aggregation.groupBy(rows, context, source.getTypeInfo());
@@ -79,20 +61,13 @@ public final class ObjectSourceBasedAgGridRowSource<K, V> implements AgGridRowSo
             return rows.map(source.getTypeInfo().toMap());
         }
 
-        private Stream<V> getFilteredRows(int batchSize) {
+        private Stream<V> getFilteredRows() {
+            final RequestFilters filters = DefaultRequestFilters.create(context.getRequest());
             // Source is free to ignore filters
-            final Sets.SetView<String> toFilter =
+            final Set<String> toFilter =
                     Sets.difference(filters.getNames(), source.getFilteredNames());
             final Predicate<V> predicate = filter(toFilter, filters);
-            // get keys and extract rows
-            return StreamSupport.stream(
-                    Iterables.partition(
-                            source.getKeys(),
-                            batchSize
-                    ).spliterator(),
-                    false
-            ).map(source::getAll)
-                    .flatMap(Collection::stream)
+            return source.getAll(filters)
                     .filter(predicate);
         }
 
@@ -129,7 +104,7 @@ public final class ObjectSourceBasedAgGridRowSource<K, V> implements AgGridRowSo
             return nullsFirst(comparator);
         }
 
-        private List<Map<String, Object>> limit(Stream<Map<String, Object>> src) {
+        private <T> List<T> limit(Stream<T> src) {
             return src.skip(context.getRequest().getStartRow())
                     .limit(context.getRequest().getEndRow() + 1)
                     .collect(Collectors.toList());

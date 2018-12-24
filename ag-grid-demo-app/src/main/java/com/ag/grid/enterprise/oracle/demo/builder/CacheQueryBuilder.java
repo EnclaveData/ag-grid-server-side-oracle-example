@@ -1,10 +1,8 @@
 package com.ag.grid.enterprise.oracle.demo.builder;
 
-import com.github.ykiselev.ag.grid.api.filter.ColumnFilter;
-import com.github.ykiselev.ag.grid.api.filter.NumberColumnFilter;
-import com.github.ykiselev.ag.grid.api.filter.SetColumnFilter;
-import com.github.ykiselev.ag.grid.api.request.ColumnVO;
 import com.github.ykiselev.ag.grid.api.request.AgGridGetRowsRequest;
+import com.github.ykiselev.ag.grid.api.request.AggFunc;
+import com.github.ykiselev.ag.grid.api.request.ColumnVO;
 import com.google.common.collect.ImmutableMap;
 import com.tangosol.util.Filter;
 import com.tangosol.util.InvocableMap;
@@ -20,16 +18,13 @@ import com.tangosol.util.extractor.ReflectionExtractor;
 import com.tangosol.util.filter.AllFilter;
 import com.tangosol.util.filter.AlwaysFilter;
 import com.tangosol.util.filter.EqualsFilter;
-import com.tangosol.util.filter.InFilter;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -43,22 +38,11 @@ import static java.util.stream.Stream.concat;
  */
 public final class CacheQueryBuilder {
 
-    private static final Map<String, BiFunction<NumberColumnFilter, ValueExtractor, Filter>> numberFilterMap =
-            ImmutableMap.<String, BiFunction<NumberColumnFilter, ValueExtractor, Filter>>builder()
-                    .put("inRange", CohFilters::between)
-                    .put("equals", CohFilters::equals)
-                    .put("notEqual", CohFilters::notEquals)
-                    .put("lessThan", CohFilters::lessThan)
-                    .put("lessThanOrEqual", CohFilters::lessThanOrEqual)
-                    .put("greaterThan", CohFilters::greaterThan)
-                    .put("greaterThanOrEqual", CohFilters::greaterThanOrEqual)
-                    .build();
-
-    private static final Map<String, Function<String, InvocableMap.EntryAggregator>> aggregatorMap = ImmutableMap.of(
-            "avg", col -> new DoubleAverage(getterFor(col)),
-            "sum", col -> new DoubleSum(getterFor(col)),
-            "min", col -> new DoubleMin(getterFor(col)),
-            "max", col -> new DoubleMax(getterFor(col))
+    private static final Map<AggFunc, Function<String, InvocableMap.EntryAggregator>> aggregatorMap = ImmutableMap.of(
+            AggFunc.AVG, col -> new DoubleAverage(CohFilters.getterFor(col)),
+            AggFunc.SUM, col -> new DoubleSum(CohFilters.getterFor(col)),
+            AggFunc.MIN, col -> new DoubleMin(CohFilters.getterFor(col)),
+            AggFunc.MAX, col -> new DoubleMax(CohFilters.getterFor(col))
     );
 
     private List<String> rowGroups;
@@ -113,7 +97,7 @@ public final class CacheQueryBuilder {
     }
 
     public Filter filter() {
-        final Filter[] filters = concat(getGroupColumns(), getFilters()).toArray(Filter[]::new);
+        final Filter[] filters = concat(getGroupColumns(), CohFilters.getFilters(request.getFilterModel())).toArray(Filter[]::new);
         if (filters.length > 0) {
             return new AllFilter(filters);
         }
@@ -126,7 +110,7 @@ public final class CacheQueryBuilder {
         }
         final ValueExtractor[] rows = getRowGroupsToInclude()
                 .stream()
-                .map(group -> new ReflectionExtractor<>(getterFor(group)))
+                .map(group -> new ReflectionExtractor<>(CohFilters.getterFor(group)))
                 .toArray(ValueExtractor[]::new);
         if (rows.length < 1) {
             throw new IllegalStateException("No row groups!");
@@ -141,7 +125,7 @@ public final class CacheQueryBuilder {
                     rows,
                     request.getPivotCols()
                             .stream()
-                            .map(col -> getterFor(col.getField()))
+                            .map(col -> CohFilters.getterFor(col.getField()))
                             .map(ReflectionExtractor::new)
                             .toArray(ValueExtractor[]::new),
                     values
@@ -215,16 +199,17 @@ public final class CacheQueryBuilder {
         }
         return request.getValueCols()
                 .stream()
+                .filter(col -> col.getAggFunc() != null)
                 .map(col -> aggregatorMap.get(col.getAggFunc()).apply(col.getField()))
                 .toArray(InvocableMap.EntryAggregator[]::new);
     }
 
-    public List<Map<String, Object>> parseResult(Object result) {
+    public List<?> parseResult(Object result) {
         if (result == null) {
             throw new NullPointerException("result");
         }
+        final Stream<?> stream;
         if (result instanceof Map) {
-            final Stream<Map<String, Object>> stream;
             if (isPivot()) {
                 stream = ((Map<?, ?>) result).entrySet()
                         .parallelStream()
@@ -234,10 +219,16 @@ public final class CacheQueryBuilder {
                         .parallelStream()
                         .map(this::toRow);
             }
-            return stream.collect(toList());
+
+        } else if (result instanceof Set) {
+            stream = ((Set<Map.Entry<?, ?>>) result).stream()
+                    .map(Map.Entry::getValue);
         } else {
             throw new IllegalStateException("Unsupported result: " + result.getClass());
         }
+        return stream.skip(request.getStartRow())
+                .limit(request.getEndRow() + 1)
+                .collect(toList());
     }
 
     private Map<String, Object> toRow(Map.Entry<?, ?> row) {
@@ -361,41 +352,6 @@ public final class CacheQueryBuilder {
 //        return " OFFSET " + startRow + " ROWS FETCH NEXT " + (endRow - startRow + 1) + " ROWS ONLY";
 //    }
 
-    private Stream<Filter> getFilters() {
-        final Function<Map.Entry<String, ColumnFilter>, Filter> applyFilters = entry -> {
-            String columnName = entry.getKey();
-            ColumnFilter filter = entry.getValue();
-
-            if (filter instanceof SetColumnFilter) {
-                return setFilter(columnName, (SetColumnFilter) filter);
-            }
-            if (filter instanceof NumberColumnFilter) {
-                return numberFilter(columnName, (NumberColumnFilter) filter);
-            }
-            return AlwaysFilter.INSTANCE;
-        };
-
-        return request.getFilterModel().entrySet().stream().map(applyFilters);
-    }
-
-    // todo - limited draft code!
-    private static String getterFor(String field) {
-        return "get" + Character.toUpperCase(field.charAt(0)) + field.substring(1);
-    }
-
-    private Filter setFilter(String columnName, SetColumnFilter filter) {
-        return new InFilter<>(getterFor(columnName),
-                filter.getValues().isEmpty()
-                        ? Collections.emptySet()
-                        : new HashSet<>(filter.getValues())
-        );
-    }
-
-    private Filter numberFilter(String columnName, NumberColumnFilter filter) {
-        return numberFilterMap.get(filter.getType())
-                .apply(filter, new ReflectionExtractor<>(getterFor(columnName)));
-    }
-
     private List<String> getRowGroupsToInclude() {
         if (rowGroupsToInclude == null) {
             rowGroupsToInclude = getRowGroups().stream()
@@ -407,7 +363,7 @@ public final class CacheQueryBuilder {
 
     // todo what if group column type is not string? Coherence doesn't convert types!
     private Stream<Filter> getGroupColumns() {
-        return zip(request.getGroupKeys().stream(), getRowGroups().stream(), (key, group) -> new EqualsFilter<>(getterFor(group), key));
+        return zip(request.getGroupKeys().stream(), getRowGroups().stream(), (key, group) -> new EqualsFilter<>(CohFilters.getterFor(group), key));
     }
 
     private List<String> getRowGroups() {

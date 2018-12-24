@@ -2,19 +2,19 @@ package com.github.ykiselev.ag.grid.api.filter;
 
 public class TextColumnFilter extends ColumnFilter {
 
-    private String type;
+    private TextFilterType type;
 
     private String filter;
 
     public TextColumnFilter() {
     }
 
-    public TextColumnFilter(String type, String filter) {
+    public TextColumnFilter(TextFilterType type, String filter) {
         this.type = type;
         this.filter = filter;
     }
 
-    public String getType() {
+    public TextFilterType getType() {
         return type;
     }
 

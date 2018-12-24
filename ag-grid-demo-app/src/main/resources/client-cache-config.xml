@@ -5,14 +5,19 @@
     <caching-scheme-mapping>
         <cache-mapping>
             <cache-name>Trades</cache-name>
-            <scheme-name>trades</scheme-name>
+            <scheme-name>remote</scheme-name>
+        </cache-mapping>
+
+        <cache-mapping>
+            <cache-name>Portfolios</cache-name>
+            <scheme-name>remote</scheme-name>
         </cache-mapping>
     </caching-scheme-mapping>
 
     <caching-schemes>
 
         <remote-cache-scheme>
-            <scheme-name>trades</scheme-name>
+            <scheme-name>remote</scheme-name>
             <service-name>ExtendTcpCacheService</service-name>
             <initiator-config>
                 <tcp-initiator>

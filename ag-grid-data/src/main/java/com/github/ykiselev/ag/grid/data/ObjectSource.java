@@ -1,19 +1,30 @@
 package com.github.ykiselev.ag.grid.data;
 
+import com.github.ykiselev.ag.grid.data.types.TypeInfo;
+
+import java.util.Set;
+import java.util.stream.Stream;
+
 /**
  * @author Yuriy Kiselev (uze@yandex.ru).
  */
-public interface ObjectSource<K, V> {
+public interface ObjectSource<V> {
 
     /**
-     * Convenient method to create filtered map source. Implementation may parse supplied {@code filters} once and re-use
-     * filters for consecutive calls to {@link FilteredObjectSource#getKeys()} and {@link FilteredObjectSource#getAll(java.util.Collection)}.
-     * Note that implementation is free to apply supplied filters to keys only or not to apply filters at all. In such
-     * case it is important to return correct set of columns by which filtering was applied via {@link FilteredObjectSource#getFilteredNames()}
-     *
-     * @param filters the filters to apply.
-     * @return map source that applies configured filter when returning keys and values.
+     * @return the columns for which the filter was already applied
      */
-    FilteredObjectSource<K, V> filter(RequestFilters filters);
+    Set<String> getFilteredNames();
+
+    /**
+     * Implementing class is expected to apply supplied filter (if possible).
+     *
+     * @return all the keys that passed the configured filter.
+     */
+    Stream<V> getAll(RequestFilters filters);
+
+    /**
+     * @return the type info for parameter {@code V}
+     */
+    TypeInfo<V> getTypeInfo();
 
 }

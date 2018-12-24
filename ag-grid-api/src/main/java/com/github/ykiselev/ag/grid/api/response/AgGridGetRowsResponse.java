@@ -1,11 +1,10 @@
 package com.github.ykiselev.ag.grid.api.response;
 
 import java.util.List;
-import java.util.Map;
 
-public class AgGridGetRowsResponse {
+public class AgGridGetRowsResponse<V> {
 
-    private List<Map<String, Object>> data;
+    private List<V> data;
 
     private int lastRow;
 
@@ -14,17 +13,17 @@ public class AgGridGetRowsResponse {
     public AgGridGetRowsResponse() {
     }
 
-    public AgGridGetRowsResponse(List<Map<String, Object>> data, int lastRow, List<String> secondaryColumnFields) {
+    public AgGridGetRowsResponse(List<V> data, int lastRow, List<String> secondaryColumnFields) {
         this.data = data;
         this.lastRow = lastRow;
         this.secondaryColumnFields = secondaryColumnFields;
     }
 
-    public List<Map<String, Object>> getData() {
+    public List<V> getData() {
         return data;
     }
 
-    public void setData(List<Map<String, Object>> data) {
+    public void setData(List<V> data) {
         this.data = data;
     }
 

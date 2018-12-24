@@ -37,25 +37,25 @@ public final class Predicates {
 
     public static <V> Predicate<V> predicate(ToIntFunction<V> getter, NumberColumnFilter filter) {
         switch (filter.getType()) {
-            case "equals":
+            case EQUALS:
                 return equals2(getter, filter);
 
-            case "notEqual":
+            case NOT_EQUAL:
                 return equals2(getter, filter).negate();
 
-            case "lessThan":
+            case LESS_THAN:
                 return lessThan(getter, filter);
 
-            case "lessThanOrEqual":
+            case LESS_THAN_OR_EQUAL:
                 return lessThanOrEqual(getter, filter);
 
-            case "greaterThan":
+            case GREATER_THAN:
                 return greaterThan(getter, filter);
 
-            case "greaterThanOrEqual":
+            case GREATER_THAN_OR_EQUAL:
                 return greaterThanOrEqual(getter, filter);
 
-            case "inRange":
+            case IN_RANGE:
                 return between(getter, filter);
 
             default:
@@ -65,22 +65,22 @@ public final class Predicates {
 
     public static <V> Predicate<V> predicate(Function<V, String> getter, TextColumnFilter filter) {
         switch (filter.getType()) {
-            case "equals":
+            case EQUALS:
                 return equals2(getter, filter);
 
-            case "notEqual":
+            case NOT_EQUAL:
                 return equals2(getter, filter).negate();
 
-            case "contains":
+            case CONTAINS:
                 return contains(getter, filter);
 
-            case "notContains":
+            case NOT_CONTAINS:
                 return notContains(getter, filter);
 
-            case "startsWith":
+            case STARTS_WITH:
                 return startsWith(getter, filter);
 
-            case "endsWith":
+            case ENDS_WITH:
                 return endsWith(getter, filter);
 
             default:

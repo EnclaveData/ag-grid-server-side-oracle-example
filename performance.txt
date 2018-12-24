@@ -1,0 +1,52 @@
+1) Page load
+2) expand first level
+3) expand second level
+4) expand third level
+5) remove first level
+6) remove second level
+7) remove third level (plain list)
+8) next page (plain list)
+9) sorted by trade
+
+Limited to portfolio_1 (200K trades)
+
+com.ag.grid.enterprise.oracle.demo.builder.CacheQueryBuilder
+1) 2471 ms
+2) 59 ms
+3) 115 ms
+4) 25 ms
+5) 2214 ms
+6) 2356 ms
+7) 9740 ms
+8) 8258 ms
+
+com.github.ykiselev.ag.grid.data.ObjectSourceBasedAgGridRowSource (over Cache, w/o portfolio keys)
+1) 12239 ms
+2) 124 ms
+3) 134 ms
+4) 88 ms
+5) 10451 ms
+6) 10481 ms
+7) 10381 ms
+8) 10263 ms
+
+com.github.ykiselev.ag.grid.data.ObjectSourceBasedAgGridRowSource (over Cache, w/o portfolio keys, unordered indices)
+1) 11240 ms
+2) 118 ms
+3) 133 ms
+4) 84 ms
+5) 10152 ms
+6) 10055 ms
+7) 9802 ms
+8) 9649 ms
+
+com.github.ykiselev.ag.grid.data.ObjectSourceBasedAgGridRowSource (over Cache, using keys if pf+(flt<2), unordered indices)
+1) 3092 ms
+2) 117 ms
+3) 116 ms
+4) 78 ms
+5) 2942 ms
+6) 2957 ms
+7) 69 ms
+8) 64 ms
+9) 3479 ms

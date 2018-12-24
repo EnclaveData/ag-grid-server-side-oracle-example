@@ -3,6 +3,7 @@ package com.ag.grid.enterprise.oracle.demo;
 import com.ag.grid.enterprise.oracle.demo.builder.OracleSqlQueryBuilder;
 import com.github.ykiselev.ag.grid.api.filter.ColumnFilter;
 import com.github.ykiselev.ag.grid.api.filter.NumberColumnFilter;
+import com.github.ykiselev.ag.grid.api.filter.NumberFilterType;
 import com.github.ykiselev.ag.grid.api.filter.SetColumnFilter;
 import com.github.ykiselev.ag.grid.api.request.AggFunc;
 import com.github.ykiselev.ag.grid.api.request.ColumnVO;
@@ -109,7 +110,7 @@ public class OracleSqlQueryBuilderTest {
 
         request.setFilterModel(new HashMap<String, ColumnFilter>() {{
             put("SPORT", new SetColumnFilter(ImmutableSet.of("Rowing", "Tennis")));
-            put("AGE", new NumberColumnFilter("equals", 22, null));
+            put("AGE", new NumberColumnFilter(NumberFilterType.EQUALS, 22, null));
         }});
         request.setSortModel(singletonList(new SortModel("ATHLETE", Sorting.ASC)));
 

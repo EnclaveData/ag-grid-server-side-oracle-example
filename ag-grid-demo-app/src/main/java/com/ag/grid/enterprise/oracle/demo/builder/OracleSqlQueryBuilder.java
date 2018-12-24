@@ -2,16 +2,17 @@ package com.ag.grid.enterprise.oracle.demo.builder;
 
 import com.github.ykiselev.ag.grid.api.filter.ColumnFilter;
 import com.github.ykiselev.ag.grid.api.filter.NumberColumnFilter;
+import com.github.ykiselev.ag.grid.api.filter.NumberFilterType;
 import com.github.ykiselev.ag.grid.api.filter.SetColumnFilter;
 import com.github.ykiselev.ag.grid.api.request.AgGridGetRowsRequest;
 import com.github.ykiselev.ag.grid.api.request.ColumnVO;
 import com.github.ykiselev.ag.grid.api.request.SortModel;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -157,10 +158,10 @@ public class OracleSqlQueryBuilder {
     private BiFunction<String, NumberColumnFilter, String> numberFilter() {
         return (String columnName, NumberColumnFilter filter) -> {
             Integer filterValue = filter.getFilter();
-            String filerType = filter.getType();
-            String operator = operatorMap.get(filerType);
+            NumberFilterType filerType = filter.getType();
+            String operator = numberOperatorMap.get(filerType);
 
-            return columnName + (filerType.equals("inRange") ?
+            return columnName + (filerType == NumberFilterType.IN_RANGE ?
                     " BETWEEN " + filterValue + " AND " + filter.getFilterTo() : " " + operator + " " + filterValue);
         };
     }
@@ -218,12 +219,12 @@ public class OracleSqlQueryBuilder {
         return "(" + l.stream().map(s -> "\'" + s + "\'").collect(joining(", ")) + ")";
     }
 
-    private Map<String, String> operatorMap = new HashMap<String, String>() {{
-        put("equals", "=");
-        put("notEqual", "<>");
-        put("lessThan", "<");
-        put("lessThanOrEqual", "<=");
-        put("greaterThan", ">");
-        put("greaterThanOrEqual", ">=");
-    }};
+    private Map<NumberFilterType, String> numberOperatorMap = ImmutableMap.<NumberFilterType, String>builder()
+            .put(NumberFilterType.EQUALS, "=")
+            .put(NumberFilterType.NOT_EQUAL, "<>")
+            .put(NumberFilterType.LESS_THAN, "<")
+            .put(NumberFilterType.LESS_THAN_OR_EQUAL, "<=")
+            .put(NumberFilterType.GREATER_THAN, ">")
+            .put(NumberFilterType.GREATER_THAN_OR_EQUAL, ">=")
+            .build();
 }

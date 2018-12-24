@@ -2,7 +2,7 @@ package com.github.ykiselev.ag.grid.api.filter;
 
 public class NumberColumnFilter extends ColumnFilter {
 
-    private String type;
+    private NumberFilterType type;
 
     private Integer filter;
 
@@ -11,13 +11,13 @@ public class NumberColumnFilter extends ColumnFilter {
     public NumberColumnFilter() {
     }
 
-    public NumberColumnFilter(String type, Integer filter, Integer filterTo) {
+    public NumberColumnFilter(NumberFilterType type, Integer filter, Integer filterTo) {
         this.type = type;
         this.filter = filter;
         this.filterTo = filterTo;
     }
 
-    public String getType() {
+    public NumberFilterType getType() {
         return type;
     }
 

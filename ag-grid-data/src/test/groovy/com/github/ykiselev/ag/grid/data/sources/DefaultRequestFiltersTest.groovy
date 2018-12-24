@@ -2,6 +2,7 @@ package com.github.ykiselev.ag.grid.data.sources
 
 import com.github.ykiselev.ag.grid.api.filter.GroupKey
 import com.github.ykiselev.ag.grid.api.filter.TextColumnFilter
+import com.github.ykiselev.ag.grid.api.filter.TextFilterType
 import com.github.ykiselev.ag.grid.api.request.AgGridGetRowsRequest
 import com.github.ykiselev.ag.grid.api.request.ColumnVO
 import com.github.ykiselev.ag.grid.data.DefaultRequestFilters
@@ -14,8 +15,8 @@ class DefaultRequestFiltersTest extends Specification {
 
     def "should fill in filters"() {
         given:
-        def cf1 = new TextColumnFilter('startsWith', 'xyz')
-        def cf2 = new TextColumnFilter('endsWith', 'abc')
+        def cf1 = new TextColumnFilter(TextFilterType.STARTS_WITH, 'xyz')
+        def cf2 = new TextColumnFilter(TextFilterType.ENDS_WITH, 'abc')
         def req = new AgGridGetRowsRequest()
         req.setFilterModel([
                 ('a'): cf1,
