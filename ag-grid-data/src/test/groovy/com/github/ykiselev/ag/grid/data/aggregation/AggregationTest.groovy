@@ -4,11 +4,7 @@ import com.github.ykiselev.ag.grid.api.request.AgGridGetRowsRequest
 import com.github.ykiselev.ag.grid.api.request.AggFunc
 import com.github.ykiselev.ag.grid.api.request.ColumnVO
 import com.github.ykiselev.ag.grid.data.Context
-import com.github.ykiselev.ag.grid.data.types.DefaultTypeInfo
-import com.github.ykiselev.ag.grid.data.types.DoubleAttribute
-import com.github.ykiselev.ag.grid.data.types.IntAttribute
-import com.github.ykiselev.ag.grid.data.types.LongAttribute
-import com.github.ykiselev.ag.grid.data.types.ObjectAttribute
+import com.github.ykiselev.ag.grid.data.types.*
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -37,7 +33,9 @@ class AggregationTest extends Specification {
                 new AgGridGetRowsRequest(
                         startRow: 0,
                         endRow: 100,
-                        rowGroupCols: [],
+                        rowGroupCols: [
+                                new ColumnVO('a', 'a', 'a', null)
+                        ],
                         valueCols: [],
                         pivotCols: [],
                         pivotMode: false,
@@ -50,47 +48,6 @@ class AggregationTest extends Specification {
 
         then:
         result.length == 0
-    }
-
-    def "should simply convert input items into maps when no grouping and pivoting defined"() {
-        when:
-        def context = Context.create(
-                new AgGridGetRowsRequest(
-                        startRow: 0,
-                        endRow: 100,
-                        rowGroupCols: [],
-                        valueCols: [],
-                        pivotCols: [],
-                        pivotMode: false,
-                        groupKeys: [],
-                        filterModel: [:],
-                        sortModel: []
-                )
-        )
-        def result = Aggregation.groupBy(
-                Stream.of(
-                        [1, 2d, 3L, null] as Object[],
-                        [4, 5d, 6L, null]
-                ),
-                context,
-                typeInfo
-        ).toArray()
-
-        then:
-        result == [
-                [
-                        'a': 1,
-                        'b': 2d,
-                        'c': 3L,
-                        'd': null
-                ],
-                [
-                        'a': 4,
-                        'b': 5d,
-                        'c': 6L,
-                        'd': null
-                ]
-        ] as Object[]
     }
 
     def "should group input if group columns count > group key count"() {

@@ -6,7 +6,6 @@ import com.github.ykiselev.ag.grid.api.filter.ColumnFilter;
 import com.github.ykiselev.ag.grid.api.request.AgGridGetRowsRequest;
 import com.github.ykiselev.ag.grid.api.response.AgGridGetRowsResponse;
 import com.github.ykiselev.ag.grid.data.AgGridRowSource;
-import com.github.ykiselev.ag.grid.data.Context;
 import com.github.ykiselev.ag.grid.data.ObjectSource;
 import com.github.ykiselev.ag.grid.data.ObjectSourceBasedAgGridRowSource;
 import com.github.ykiselev.ag.grid.data.RequestFilters;
@@ -47,7 +46,7 @@ public class InMemoryObjTradeDao implements TradeDao {
                 }
 
                 @Override
-                public Stream<Trade> getAll(RequestFilters filters, Context context) {
+                public Stream<Trade> getAll(RequestFilters filters) {
                     final ColumnFilter keyFilter = filters.getColumnFilter("portfolio");
                     if (keyFilter != null) {
                         return tradesByPortfolio.get()
@@ -69,62 +68,6 @@ public class InMemoryObjTradeDao implements TradeDao {
                     return typeInfo;
                 }
             }
-/*            filters -> {
-                final ColumnFilter keyFilter = filters.getColumnFilter("portfolio");
-                final Predicate<String> keyPredicate;
-                if (keyFilter != null) {
-                    keyPredicate = Predicates.predicate(stringAttribute, keyFilter);
-                } else {
-                    keyPredicate = null;
-                }
-                // todo
-                final Predicate<Trade> valuePredicate = v -> true;
-                return new FilteredObjectSource<Long, Trade>() {
-                    @Override
-                    public Set<String> getFilteredNames() {
-                        return Collections.emptySet();
-                    }
-
-                    @Override
-                    public Iterable<Long> getKeys() {
-                        return () -> {
-                            if (keyPredicate != null) {
-                                final List<String> portfolios = tradesByPortfolio.get()
-                                        .keySet()
-                                        .stream()
-                                        .filter(keyPredicate)
-                                        .collect(Collectors.toList());
-                                return portfolios.stream()
-                                        .map(tradesByPortfolio.get()::get)
-                                        .filter(Objects::nonNull)
-                                        .flatMap(m -> m.keySet().stream())
-                                        .iterator();
-                            } else {
-                                return allTrades.get()
-                                        .keySet()
-                                        .stream()
-                                        .iterator();
-                            }
-                        };
-                    }
-
-                    @Override
-                    public Collection<Trade> getAll(Collection<Long> keys) {
-                        final Map<Long, Trade> map = allTrades.get();
-                        return keys.stream()
-                                .map(map::get)
-                                .filter(Objects::nonNull)
-                                .filter(valuePredicate)
-                                .collect(Collectors.toList());
-                    }
-
-                    @Override
-                    public TypeInfo<Trade> getTypeInfo() {
-                        return typeInfo;
-                    }
-                };
-            },
-            5_000*/
     );
 
     @PostConstruct

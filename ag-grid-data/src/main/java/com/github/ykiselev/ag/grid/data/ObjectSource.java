@@ -20,7 +20,7 @@ public interface ObjectSource<V> {
      *
      * @return all the keys that passed the configured filter.
      */
-    Stream<V> getAll(RequestFilters filters, Context context);
+    Stream<V> getAll(RequestFilters filters);
 
     /**
      * @return the type info for parameter {@code V}

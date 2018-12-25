@@ -1,16 +1,16 @@
 1) Page load
-2) expand first level
-3) expand second level
-4) expand third level
-5) remove first level
-6) remove second level
-7) remove third level (plain list)
+2) expand Product level
+3) expand Portfolio level
+4) expand Book level
+5) remove Product level
+6) remove Portfolio level
+7) remove Book level (-> plain list)
 8) next page (plain list)
-9) sorted by trade
+9) sort by trade
 
 Limited to portfolio_1 (200K trades)
 
-com.ag.grid.enterprise.oracle.demo.builder.CacheQueryBuilder
+com.ag.grid.enterprise.oracle.demo.builder.CacheQueryBuilder(?)
 1) 2471 ms
 2) 59 ms
 3) 115 ms
@@ -20,7 +20,18 @@ com.ag.grid.enterprise.oracle.demo.builder.CacheQueryBuilder
 7) 9740 ms
 8) 8258 ms
 
-com.github.ykiselev.ag.grid.data.ObjectSourceBasedAgGridRowSource (over Cache, w/o portfolio keys)
+com.ag.grid.enterprise.oracle.demo.builder.CacheQueryBuilder (no indices)
+1) 19979 ms
+2) 19790 ms
+3) 19750 ms
+4) 19524 ms
+5) 19769 ms
+6) 19971 ms
+7) 20324 ms
+8) 20061 ms
+9) 20018 ms
+
+com.github.ykiselev.ag.grid.data.ObjectSourceBasedAgGridRowSource (over Cache, w/o portfolio keys, ?)
 1) 12239 ms
 2) 124 ms
 3) 134 ms
@@ -50,3 +61,26 @@ com.github.ykiselev.ag.grid.data.ObjectSourceBasedAgGridRowSource (over Cache, u
 7) 69 ms
 8) 64 ms
 9) 3479 ms
+
+com.github.ykiselev.ag.grid.data.ObjectSourceBasedAgGridRowSource (over Cache, using keys if pf+(flt<2), no indices)
+1) 4838 ms
+2) 19371 ms
+3) 18315 ms
+4) 19327 ms
+5) 3290 ms
+6) 3254 ms
+7) 69 ms
+8) 78 ms
+9) 3644 ms
+
+com.github.ykiselev.ag.grid.data.ObjectSourceBasedAgGridRowSource (over Cache, always using keys, no indices)
+1) 4967 ms
+2) 2816 ms
+3) 2845 ms
+4) 2800 ms
+5) 2885 ms
+6) 2930 ms
+7) 75 ms
+8) 72 ms
+9) 3412 ms
+
