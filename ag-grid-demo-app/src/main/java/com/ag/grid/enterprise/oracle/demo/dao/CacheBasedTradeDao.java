@@ -54,7 +54,7 @@ public class CacheBasedTradeDao implements TradeDao, AutoCloseable {
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
 
-    private final PortfolioKeyCache portfolioKeyCache = new DefaultPortfolioKeyCache(executorService);
+    private final PortfolioKeyCache portfolioKeyCache = new DefaultPortfolioKeyCache(1_000, executorService);
 
     public CacheBasedTradeDao() {
         this.trades = CacheFactory.getCache("Trades");
@@ -182,7 +182,7 @@ public class CacheBasedTradeDao implements TradeDao, AutoCloseable {
                     .peek(stats::peekTradeId)
                     .collect(Collectors.toList());
 
-            return StreamSupport.stream(Iterables.partition(keys, 1000).spliterator(), false)
+            return StreamSupport.stream(Iterables.partition(keys, 500).spliterator(), false)
                     .flatMap(k -> trades.getAll(k).entrySet().stream())
                     .map(Map.Entry::getValue)
                     .peek(stats::peekTrade);

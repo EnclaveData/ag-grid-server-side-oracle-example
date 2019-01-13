@@ -29,11 +29,12 @@ public final class DefaultPortfolioKeyCache implements PortfolioKeyCache {
 
     private final Map<Key, ColumnIndex<Long, Portfolio>> indices = new ConcurrentHashMap<>();
 
-    private final int threshold = 25_000;
+    private final int threshold;
 
     private final ExecutorService executorService;
 
-    public DefaultPortfolioKeyCache(ExecutorService executorService) {
+    public DefaultPortfolioKeyCache(int threshold, ExecutorService executorService) {
+        this.threshold = threshold;
         this.executorService = requireNonNull(executorService);
     }
 
