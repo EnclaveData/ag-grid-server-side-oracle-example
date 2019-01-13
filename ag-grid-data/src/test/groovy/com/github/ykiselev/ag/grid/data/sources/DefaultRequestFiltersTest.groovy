@@ -30,9 +30,9 @@ class DefaultRequestFiltersTest extends Specification {
 
         then:
         f.getNames() as Set == ['a', 'b', 'c'] as Set
-        f.getColumnFilter('a') == cf1
-        f.getColumnFilter('b') == cf2
-        def f3 = f.getColumnFilter('c')
+        f.getFilter('a') == cf1
+        f.getFilter('b') == cf2
+        def f3 = f.getFilter('c')
         (f3 as GroupKey).filter == 'value1'
     }
 }

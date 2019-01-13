@@ -167,7 +167,7 @@ public final class CohFilters {
     public static Filter filter(RequestFilters filters) {
         final Filter[] array = filters.getNames()
                 .stream()
-                .map(col -> toFilter(filters.getColumnFilter(col), new ReflectionExtractor(getterFor(col))))
+                .map(col -> toFilter(filters.getFilter(col), new ReflectionExtractor(getterFor(col))))
                 .toArray(Filter[]::new);
         if (array.length > 0) {
             return new AllFilter(array);

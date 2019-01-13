@@ -7,7 +7,6 @@ import com.github.ykiselev.ag.grid.api.response.AgGridGetRowsResponse;
 import com.github.ykiselev.ag.grid.data.aggregation.Aggregation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,8 +37,6 @@ public final class Context {
     private final List<String> pivotColumns;
 
     private final Map<String, ColumnVO> columns;
-
-    private final Set<String> columnsToMerge;
 
     private final Set<String> secondaryColumns = new HashSet<>();
 
@@ -79,10 +76,6 @@ public final class Context {
         return request.getGroupKeys().size();
     }
 
-    public Set<String> getColumnsToMerge() {
-        return columnsToMerge;
-    }
-
     public Context(AgGridGetRowsRequest request, boolean isPivot, boolean isGrouping, List<String> valueColumns, List<String> groupByColumns, List<String> pivotColumns, Map<String, ColumnVO> columns) {
         this.request = requireNonNull(request);
         this.isPivot = isPivot;
@@ -91,13 +84,6 @@ public final class Context {
         this.groupByColumns = requireNonNull(groupByColumns);
         this.pivotColumns = requireNonNull(pivotColumns);
         this.columns = requireNonNull(columns);
-        this.columnsToMerge = ImmutableSet.<String>builder()
-                .addAll(valueColumns)
-                .build();
-    }
-
-    public boolean addSecondaryColumn(String column) {
-        return secondaryColumns.add(column);
     }
 
     /**
@@ -122,8 +108,7 @@ public final class Context {
     }
 
     public Map<String, AggFunc> indexAggregationFunctions() {
-        return getColumnsToMerge()
-                .stream()
+        return valueColumns.stream()
                 .filter(col -> getColumn(col).getAggFunc() != null)
                 .collect(Collectors.toMap(
                         Function.identity(),

@@ -20,5 +20,5 @@ public interface RequestFilters {
      * @return column filter for specified name
      * @see ColumnVO#getField()
      */
-    ColumnFilter getColumnFilter(String name);
+    ColumnFilter getFilter(String name);
 }

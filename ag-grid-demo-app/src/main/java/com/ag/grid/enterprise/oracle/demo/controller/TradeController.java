@@ -8,6 +8,7 @@ import com.github.ykiselev.ag.grid.api.request.AgGridGetRowsRequest;
 import com.github.ykiselev.ag.grid.api.response.AgGridGetRowsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -43,5 +44,10 @@ public class TradeController {
             filterModel.put("portfolio", new TextColumnFilter(TextFilterType.EQUALS, portfolio));
         }
         return tradeDao.getData(request);
+    }
+
+    @GetMapping("/cache")
+    public String getCacheInfo() {
+        return tradeDao.getCacheInfo();
     }
 }

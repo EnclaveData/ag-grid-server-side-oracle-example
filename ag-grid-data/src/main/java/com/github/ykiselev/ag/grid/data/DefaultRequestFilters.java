@@ -29,7 +29,7 @@ public final class DefaultRequestFilters implements RequestFilters {
     }
 
     @Override
-    public ColumnFilter getColumnFilter(String field) {
+    public ColumnFilter getFilter(String field) {
         return filters.get(field);
     }
 

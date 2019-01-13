@@ -9,4 +9,8 @@ import com.github.ykiselev.ag.grid.api.response.AgGridGetRowsResponse;
 public interface TradeDao {
 
     AgGridGetRowsResponse getData(AgGridGetRowsRequest request);
+
+    default String getCacheInfo(){
+        return "unsupported!";
+    }
 }

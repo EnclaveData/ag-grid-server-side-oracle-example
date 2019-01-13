@@ -35,19 +35,26 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
 
     @Override
     public AgGridGetRowsResponse getRows(AgGridGetRowsRequest request) {
-        return new ResponseBuilder(Context.create(request)).build();
+        final Context context = Context.create(request);
+        final RequestFilters filters = DefaultRequestFilters.create(context.getRequest());
+        try (FilteredObjectSource<V> filteredSource = source.filter(filters)) {
+            return new ResponseBuilder<>(context, filteredSource).build();
+        }
     }
 
-    private final class ResponseBuilder {
+    private static final class ResponseBuilder<V> {
 
         private final Context context;
 
-        ResponseBuilder(Context context) {
+        private final FilteredObjectSource<V> source;
+
+        ResponseBuilder(Context context, FilteredObjectSource<V> source) {
             this.context = requireNonNull(context);
+            this.source = requireNonNull(source);
         }
 
         AgGridGetRowsResponse build() {
-            final Stream<V> rows = getFilteredRows();
+            final Stream<V> rows = filter();
             final Stream<Map<String, Object>> result;
             if (context.isGrouping() || context.isPivot()) {
                 result = Aggregation.groupBy(rows, context, source.getTypeInfo());
@@ -61,13 +68,13 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
             return rows.map(source.getTypeInfo().toMap());
         }
 
-        private Stream<V> getFilteredRows() {
-            final RequestFilters filters = DefaultRequestFilters.create(context.getRequest());
-            // Source is free to ignore filters
+        private Stream<V> filter() {
+            // Source is free to ignore some or all original filters, so we need to filter by ignored filters here
+            final RequestFilters filters = source.getFilters();
             final Set<String> toFilter =
                     Sets.difference(filters.getNames(), source.getFilteredNames());
             final Predicate<V> predicate = filter(toFilter, filters);
-            return source.getAll(filters)
+            return source.stream()
                     .filter(predicate);
         }
 
@@ -75,7 +82,7 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
             final Function<String, Predicate<V>> factory = col ->
                     Predicates.predicate(
                             source.getTypeInfo().getAttribute(col),
-                            filters.getColumnFilter(col)
+                            filters.getFilter(col)
                     );
             return columns.stream()
                     .map(factory)

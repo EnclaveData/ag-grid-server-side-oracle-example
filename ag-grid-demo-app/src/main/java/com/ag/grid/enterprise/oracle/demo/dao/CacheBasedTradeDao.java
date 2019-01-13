@@ -8,18 +8,14 @@ import com.github.ykiselev.ag.grid.api.filter.ColumnFilter;
 import com.github.ykiselev.ag.grid.api.request.AgGridGetRowsRequest;
 import com.github.ykiselev.ag.grid.api.response.AgGridGetRowsResponse;
 import com.github.ykiselev.ag.grid.data.AgGridRowSource;
-import com.github.ykiselev.ag.grid.data.ObjectSource;
+import com.github.ykiselev.ag.grid.data.FilteredObjectSource;
 import com.github.ykiselev.ag.grid.data.ObjectSourceBasedAgGridRowSource;
 import com.github.ykiselev.ag.grid.data.RequestFilters;
 import com.github.ykiselev.ag.grid.data.types.ReflectedTypeInfo;
 import com.github.ykiselev.ag.grid.data.types.TypeInfo;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import com.tangosol.net.CacheFactory;
 import com.tangosol.net.NamedCache;
-import com.tangosol.util.Filter;
-import com.tangosol.util.QueryRecord;
-import com.tangosol.util.aggregator.QueryRecorder;
 import com.tangosol.util.extractor.KeyExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,13 +28,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static java.util.Objects.requireNonNull;
+
 @Repository("cacheBasedTradeDao")
-public class CacheBasedTradeDao implements TradeDao {
+public class CacheBasedTradeDao implements TradeDao, AutoCloseable {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -50,56 +50,11 @@ public class CacheBasedTradeDao implements TradeDao {
 
     private final ThreadLocal<Stats> stats = ThreadLocal.withInitial(Stats::new);
 
-    private volatile Set<String> indexedColumns = Collections.emptySet();
+    private final AgGridRowSource rowSource = new ObjectSourceBasedAgGridRowSource<>(FilteredTradeSource::new);
 
-    private Stream<Trade> streamFromCache(ColumnFilter keyFilter, Stats stats, RequestFilters filters) {
-        final List<Long> keys = portfolios.entrySet(CohFilters.toFilter(keyFilter, new KeyExtractor()))
-                .stream()
-                .map(Map.Entry::getValue)
-                .map(Portfolio::getTradeKeys)
-                .flatMap(Collection::stream)
-                .peek(stats::peekTradeId)
-                .collect(Collectors.toList());
+    private final ExecutorService executorService = Executors.newFixedThreadPool(4);
 
-        return StreamSupport.stream(Iterables.partition(keys, 1000).spliterator(), false)
-                .flatMap(k -> trades.getAll(k).entrySet().stream())
-                .map(Map.Entry::getValue)
-                .peek(stats::peekTrade);
-    }
-
-    private final AgGridRowSource rowSource = new ObjectSourceBasedAgGridRowSource<>(
-            new ObjectSource<Trade>() {
-                @Override
-                public Set<String> getFilteredNames() {
-                    return Collections.emptySet();
-                }
-
-                @Override
-                public Stream<Trade> getAll(RequestFilters filters) {
-                    final Stats stats = CacheBasedTradeDao.this.stats.get();
-                    stats.before();
-                    /*Filter filter = CohFilters.filter(filters);
-                    final QueryRecord record = trades.aggregate(filter, new QueryRecorder<>(QueryRecorder.RecordType.EXPLAIN));
-                    logger.info("Cache query plan for supplied filter:\n{}", record);*/
-                    ColumnFilter keyFilter = filters.getColumnFilter("portfolio");
-                    //if (keyFilter != null && filters.getNames().size() < 2) {
-                    return streamFromCache(keyFilter, stats, filters);
-                    //}
-                    /*
-                    logger.info("Falling back to filtering in cache...");
-                    Filter filter = CohFilters.filter(filters);
-                    return trades.entrySet(filter)
-                            .stream()
-                            .map(Map.Entry::getValue)
-                            .peek(stats::peekTrade);*/
-                }
-
-                @Override
-                public TypeInfo<Trade> getTypeInfo() {
-                    return typeInfo;
-                }
-            }
-    );
+    private final PortfolioKeyCache portfolioKeyCache = new DefaultPortfolioKeyCache(executorService);
 
     public CacheBasedTradeDao() {
         this.trades = CacheFactory.getCache("Trades");
@@ -139,7 +94,18 @@ public class CacheBasedTradeDao implements TradeDao {
         }
     }
 
-    private AgGridGetRowsResponse doGetData(AgGridGetRowsRequest request) {
+    @Override
+    public void close() {
+        executorService.shutdown();
+    }
+
+    @Override
+    public String getCacheInfo() {
+        return portfolioKeyCache.getInfo();
+    }
+
+    @Override
+    public AgGridGetRowsResponse getData(AgGridGetRowsRequest request) {
         return rowSource.getRows(request);
 /*
         final CacheQueryBuilder builder = new CacheQueryBuilder(request);
@@ -154,15 +120,7 @@ public class CacheBasedTradeDao implements TradeDao {
         final int currentLastRow = request.getStartRow() + rows.size();
         final int lastRow = currentLastRow <= request.getEndRow() ? currentLastRow : -1;
         return new AgGridGetRowsResponse<>(rows, lastRow, new ArrayList<>(builder.getSecondaryColumns()));*/
-    }
 
-    @Override
-    public AgGridGetRowsResponse getData(AgGridGetRowsRequest request) {
-        try {
-            return doGetData(request);
-        } finally {
-            stats.get().print();
-        }
     }
 
     private final class Stats {
@@ -188,4 +146,55 @@ public class CacheBasedTradeDao implements TradeDao {
         }
     }
 
+    private final class FilteredTradeSource implements FilteredObjectSource<Trade> {
+
+        private final RequestFilters filters;
+
+        FilteredTradeSource(RequestFilters filters) {
+            this.filters = requireNonNull(filters);
+        }
+
+        @Override
+        public TypeInfo<Trade> getTypeInfo() {
+            return typeInfo;
+        }
+
+        @Override
+        public RequestFilters getFilters() {
+            return filters;
+        }
+
+        @Override
+        public Set<String> getFilteredNames() {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public Stream<Trade> stream() {
+            final Stats stats = CacheBasedTradeDao.this.stats.get();
+            stats.before();
+            ColumnFilter keyFilter = filters.getFilter("portfolio");
+            final List<Long> keys = portfolios.entrySet(CohFilters.toFilter(keyFilter, new KeyExtractor()))
+                    .stream()
+                    .map(Map.Entry::getValue)
+                    .map(this::getFilteredPortfolioKeys)
+                    .flatMap(Collection::stream)
+                    .peek(stats::peekTradeId)
+                    .collect(Collectors.toList());
+
+            return StreamSupport.stream(Iterables.partition(keys, 1000).spliterator(), false)
+                    .flatMap(k -> trades.getAll(k).entrySet().stream())
+                    .map(Map.Entry::getValue)
+                    .peek(stats::peekTrade);
+        }
+
+        @Override
+        public void close() {
+            stats.get().print();
+        }
+
+        private Collection<Long> getFilteredPortfolioKeys(Portfolio portfolio) {
+            return portfolioKeyCache.getKeys(portfolio, filters, typeInfo, trades);
+        }
+    }
 }
