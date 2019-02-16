@@ -1,10 +1,8 @@
 package com.ag.grid.enterprise.oracle.demo.dao;
 
 import com.ag.grid.enterprise.TradeDumpLoader;
-import com.ag.grid.enterprise.oracle.demo.builder.CohFilters;
 import com.ag.grid.enterprise.oracle.demo.domain.Portfolio;
 import com.ag.grid.enterprise.oracle.demo.domain.Trade;
-import com.github.ykiselev.ag.grid.api.filter.ColumnFilter;
 import com.github.ykiselev.ag.grid.api.request.AgGridGetRowsRequest;
 import com.github.ykiselev.ag.grid.api.response.AgGridGetRowsResponse;
 import com.github.ykiselev.ag.grid.data.AgGridRowSource;
@@ -13,10 +11,13 @@ import com.github.ykiselev.ag.grid.data.ObjectSourceBasedAgGridRowSource;
 import com.github.ykiselev.ag.grid.data.RequestFilters;
 import com.github.ykiselev.ag.grid.data.types.ReflectedTypeInfo;
 import com.github.ykiselev.ag.grid.data.types.TypeInfo;
-import com.google.common.collect.Iterables;
 import com.tangosol.net.CacheFactory;
 import com.tangosol.net.NamedCache;
-import com.tangosol.util.extractor.KeyExtractor;
+import com.tangosol.util.comparator.ExtractorComparator;
+import com.tangosol.util.comparator.InverseComparator;
+import com.tangosol.util.extractor.ReflectionExtractor;
+import com.tangosol.util.filter.AlwaysFilter;
+import com.tangosol.util.filter.LimitFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
@@ -25,7 +26,6 @@ import javax.annotation.PostConstruct;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -33,13 +33,13 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static java.util.Objects.requireNonNull;
 
 @Repository("cacheBasedTradeDao")
 public class CacheBasedTradeDao implements TradeDao, AutoCloseable {
 
+    public static final ReflectionExtractor<Object, Object> GET_TRADE_ID = new ReflectionExtractor<>("getTradeId");
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final NamedCache<Long, Trade> trades;
@@ -50,7 +50,7 @@ public class CacheBasedTradeDao implements TradeDao, AutoCloseable {
 
     private final ThreadLocal<Stats> stats = ThreadLocal.withInitial(Stats::new);
 
-    private final AgGridRowSource rowSource = new ObjectSourceBasedAgGridRowSource<>(FilteredTradeSource::new);
+    private final AgGridRowSource rowSource = new ObjectSourceBasedAgGridRowSource<>(FilteredTradeSource::new, s -> logger.info("{}", s));
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
 
@@ -70,6 +70,7 @@ public class CacheBasedTradeDao implements TradeDao, AutoCloseable {
         //trades.addIndex(new ReflectionExtractor<>("getProduct"), false, null);
         //trades.addIndex(new ReflectionExtractor<>("getPortfolio"), false, null);
         //trades.addIndex(new ReflectionExtractor<>("getBook"), false, null);
+        trades.addIndex(GET_TRADE_ID, true, null);
 
         if (trades.isEmpty()) {
             logger.info("Loading data...");
@@ -171,10 +172,16 @@ public class CacheBasedTradeDao implements TradeDao, AutoCloseable {
 
         @Override
         public Stream<Trade> stream() {
+            return trades.entrySet(new LimitFilter(AlwaysFilter.INSTANCE(), 100),
+                    new InverseComparator(new ExtractorComparator(GET_TRADE_ID)))
+                    .stream()
+                    .map(Map.Entry::getValue);
+            /*
             final Stats stats = CacheBasedTradeDao.this.stats.get();
             stats.before();
-            ColumnFilter keyFilter = filters.getFilter("portfolio");
-            final List<Long> keys = portfolios.entrySet(CohFilters.toFilter(keyFilter, new KeyExtractor()))
+            final ColumnFilter keyFilter = filters.getFilter("portfolio");
+            final Filter filter = CohFilters.toFilter(keyFilter, new KeyExtractor());
+            final List<Long> keys = portfolios.entrySet(filter)
                     .stream()
                     .map(Map.Entry::getValue)
                     .map(this::getFilteredPortfolioKeys)
@@ -185,7 +192,7 @@ public class CacheBasedTradeDao implements TradeDao, AutoCloseable {
             return StreamSupport.stream(Iterables.partition(keys, 500).spliterator(), false)
                     .flatMap(k -> trades.getAll(k).entrySet().stream())
                     .map(Map.Entry::getValue)
-                    .peek(stats::peekTrade);
+                    .peek(stats::peekTrade);*/
         }
 
         @Override

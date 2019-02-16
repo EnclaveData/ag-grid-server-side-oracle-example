@@ -36,13 +36,13 @@ public class TradeController {
                                          @RequestParam(name = "portfolio", required = false) String portfolio,
                                          HttpSession session
     ) {
-        if (portfolio == null) {
+/*        if (portfolio == null) {
             portfolio = "portfolio_1";
         }
         Map<String, ColumnFilter> filterModel = request.getFilterModel();
         if (!filterModel.containsKey("portfolio")) {
             filterModel.put("portfolio", new TextColumnFilter(TextFilterType.EQUALS, portfolio));
-        }
+        }*/
         return tradeDao.getData(request);
     }
 

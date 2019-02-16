@@ -13,6 +13,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -29,8 +30,11 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
 
     private final ObjectSource<V> source;
 
-    public ObjectSourceBasedAgGridRowSource(ObjectSource<V> source) {
+    private final Consumer<GetRowsStats> statsConsumer;
+
+    public ObjectSourceBasedAgGridRowSource(ObjectSource<V> source, Consumer<GetRowsStats> statsConsumer) {
         this.source = requireNonNull(source);
+        this.statsConsumer = requireNonNull(statsConsumer);
     }
 
     @Override
@@ -38,7 +42,10 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
         final Context context = Context.create(request);
         final RequestFilters filters = DefaultRequestFilters.create(context.getRequest());
         try (FilteredObjectSource<V> filteredSource = source.filter(filters)) {
-            return new ResponseBuilder<>(context, filteredSource).build();
+            final ResponseBuilder<V> builder = new ResponseBuilder<>(context, filteredSource);
+            final AgGridGetRowsResponse result = builder.build();
+            statsConsumer.accept(builder.getStats());
+            return result;
         }
     }
 
@@ -48,9 +55,19 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
 
         private final FilteredObjectSource<V> source;
 
+        private int totalObjects;
+
+        private int filteredObjects;
+
+        private int aggregatedObjects;
+
         ResponseBuilder(Context context, FilteredObjectSource<V> source) {
             this.context = requireNonNull(context);
             this.source = requireNonNull(source);
+        }
+
+        GetRowsStats getStats() {
+            return new GetRowsStats(totalObjects, filteredObjects, aggregatedObjects);
         }
 
         AgGridGetRowsResponse build() {
@@ -61,7 +78,7 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
             } else {
                 result = convert(rows);
             }
-            return context.createResponse(limit(sort(result)));
+            return context.createResponse(limit(sort(result.peek(v -> aggregatedObjects++))));
         }
 
         private Stream<Map<String, Object>> convert(Stream<V> rows) {
@@ -75,7 +92,9 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
                     Sets.difference(filters.getNames(), source.getFilteredNames());
             final Predicate<V> predicate = filter(toFilter, filters);
             return source.stream()
-                    .filter(predicate);
+                    .peek(v -> totalObjects++)
+                    .filter(predicate)
+                    .peek(v -> filteredObjects++);
         }
 
         private Predicate<V> filter(Set<String> columns, RequestFilters filters) {

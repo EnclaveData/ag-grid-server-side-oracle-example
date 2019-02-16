@@ -103,11 +103,11 @@ public final class DefaultPortfolioKeyCache implements PortfolioKeyCache {
             this.column = column;
         }
 
-        public String getPortfolio() {
+        String getPortfolio() {
             return portfolio;
         }
 
-        public String getColumn() {
+        String getColumn() {
             return column;
         }
 
