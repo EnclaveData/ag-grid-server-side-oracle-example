@@ -1,11 +1,14 @@
 package com.ag.grid.enterprise.oracle.demo.domain;
 
+import com.github.ykiselev.type.info.builder.BuildTypeInfo;
+
 import java.io.Serializable;
 import java.util.Objects;
 
 /**
  * @author Yuriy Kiselev (uze@yandex.ru).
  */
+@BuildTypeInfo
 public final class Trade implements Serializable {
 
     private static final long serialVersionUID = -860414236617960525L;

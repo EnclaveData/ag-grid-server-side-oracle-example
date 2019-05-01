@@ -21,6 +21,7 @@
         <module>ag-grid-demo-app</module>
         <module>ag-grid-api</module>
         <module>ag-grid-data</module>
+        <module>ag-grid-annotation-processor</module>
     </modules>
 
     <dependencyManagement>

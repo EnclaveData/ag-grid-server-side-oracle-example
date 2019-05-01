@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToIntFunction;
 import java.util.function.ToLongFunction;
@@ -29,9 +30,11 @@ public final class ReflectedTypeInfo {
      * @return the type info.
      */
     public static <T> TypeInfo<T> of(Class<T> clazz) {
-        return new DefaultTypeInfo<>(
-                attributesOf(clazz)
-        );
+        return new DefaultTypeInfo<>(attributesOf(clazz));
+    }
+
+    public static <T> TypeInfo<T> of(Class<T> clazz, Supplier<Map<String, Object>> mapFactory) {
+        return new DefaultTypeInfo<>(attributesOf(clazz), mapFactory);
     }
 
     /**

@@ -20,6 +20,7 @@ import com.tangosol.util.filter.AlwaysFilter;
 import com.tangosol.util.filter.LimitFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.PostConstruct;
@@ -37,6 +38,7 @@ import java.util.stream.Stream;
 import static java.util.Objects.requireNonNull;
 
 @Repository("cacheBasedTradeDao")
+@Lazy
 public class CacheBasedTradeDao implements TradeDao, AutoCloseable {
 
     public static final ReflectionExtractor<Object, Object> GET_TRADE_ID = new ReflectionExtractor<>("getTradeId");
@@ -50,7 +52,7 @@ public class CacheBasedTradeDao implements TradeDao, AutoCloseable {
 
     private final ThreadLocal<Stats> stats = ThreadLocal.withInitial(Stats::new);
 
-    private final AgGridRowSource rowSource = new ObjectSourceBasedAgGridRowSource<>(FilteredTradeSource::new, s -> logger.info("{}", s));
+    private final AgGridRowSource rowSource = new ObjectSourceBasedAgGridRowSource<>(FilteredTradeSource::new);
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
 

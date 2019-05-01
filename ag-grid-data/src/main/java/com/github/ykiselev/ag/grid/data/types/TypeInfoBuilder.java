@@ -42,7 +42,7 @@ public final class TypeInfoBuilder<V> {
     }
 
     public TypeInfo<V> build() {
-        return new DefaultTypeInfo<>(attributes);
+        return new DefaultTypeInfo<V>(attributes);
     }
 
     public final class ChainBuilder<O> {

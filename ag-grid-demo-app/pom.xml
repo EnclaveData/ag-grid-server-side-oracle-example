@@ -19,6 +19,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.ag.grid.enterprise</groupId>
+            <artifactId>ag-grid-annotation-processor</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
             <exclusions>
@@ -123,6 +129,15 @@
                     </dependency>
                 </dependencies>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessors>com.github.ykiselev.type.info.builder.TypeInfoProcessor</annotationProcessors>
+                </configuration>
+            </plugin>
+
         </plugins>
     </build>
 

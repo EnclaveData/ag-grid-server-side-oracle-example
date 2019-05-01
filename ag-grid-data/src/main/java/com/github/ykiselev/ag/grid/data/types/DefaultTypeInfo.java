@@ -6,27 +6,41 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * @author Yuriy Kiselev (uze@yandex.ru).
  */
 public final class DefaultTypeInfo<V> implements TypeInfo<V> {
 
+    private final Supplier<Map<String, Object>> mapFactory;
+
     private final Map<String, Attribute<V>> attributes;
 
     public DefaultTypeInfo(Map<String, Attribute<V>> attributes) {
+        this(attributes, HashMap::new);
+    }
+
+    public DefaultTypeInfo(Map<String, Attribute<V>> attributes, Supplier<Map<String, Object>> mapFactory) {
         this.attributes = ImmutableMap.copyOf(attributes);
+        this.mapFactory = requireNonNull(mapFactory);
     }
 
     public DefaultTypeInfo(Collection<Attribute<V>> attributes) {
-        this.attributes = ImmutableMap.copyOf(
+        this(attributes, HashMap::new);
+    }
+
+    public DefaultTypeInfo(Collection<Attribute<V>> attributes, Supplier<Map<String, Object>> mapFactory) {
+        this(ImmutableMap.copyOf(
                 attributes.stream()
                         .collect(Collectors.toMap(
                                 Attribute::getName,
                                 a -> a
                         ))
-        );
+        ), mapFactory);
     }
 
     @Override
@@ -42,7 +56,7 @@ public final class DefaultTypeInfo<V> implements TypeInfo<V> {
     @Override
     public Function<V, Map<String, Object>> toMap() {
         return value -> {
-            final Map<String, Object> result = new HashMap<>();
+            final Map<String, Object> result = mapFactory.get();
             attributes.forEach((name, attr) ->
                     result.put(name, attr.getObjectGetter().apply(value)));
             return result;

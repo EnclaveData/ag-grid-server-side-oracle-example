@@ -7,13 +7,13 @@ import com.github.ykiselev.ag.grid.api.response.AgGridGetRowsResponse;
 import com.github.ykiselev.ag.grid.data.aggregation.Aggregation;
 import com.github.ykiselev.ag.grid.data.common.MapUtils;
 import com.github.ykiselev.ag.grid.data.common.Predicates;
+import com.github.ykiselev.ag.grid.data.types.TypeInfo;
 import com.google.common.collect.Sets;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -30,11 +30,8 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
 
     private final ObjectSource<V> source;
 
-    private final Consumer<GetRowsStats> statsConsumer;
-
-    public ObjectSourceBasedAgGridRowSource(ObjectSource<V> source, Consumer<GetRowsStats> statsConsumer) {
+    public ObjectSourceBasedAgGridRowSource(ObjectSource<V> source) {
         this.source = requireNonNull(source);
-        this.statsConsumer = requireNonNull(statsConsumer);
     }
 
     @Override
@@ -43,9 +40,7 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
         final RequestFilters filters = DefaultRequestFilters.create(context.getRequest());
         try (FilteredObjectSource<V> filteredSource = source.filter(filters)) {
             final ResponseBuilder<V> builder = new ResponseBuilder<>(context, filteredSource);
-            final AgGridGetRowsResponse result = builder.build();
-            statsConsumer.accept(builder.getStats());
-            return result;
+            return builder.build();
         }
     }
 
@@ -55,19 +50,9 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
 
         private final FilteredObjectSource<V> source;
 
-        private int totalObjects;
-
-        private int filteredObjects;
-
-        private int aggregatedObjects;
-
         ResponseBuilder(Context context, FilteredObjectSource<V> source) {
             this.context = requireNonNull(context);
             this.source = requireNonNull(source);
-        }
-
-        GetRowsStats getStats() {
-            return new GetRowsStats(totalObjects, filteredObjects, aggregatedObjects);
         }
 
         AgGridGetRowsResponse build() {
@@ -76,9 +61,25 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
             if (context.isGrouping() || context.isPivot()) {
                 result = Aggregation.groupBy(rows, context, source.getTypeInfo());
             } else {
-                result = convert(rows);
+/*                Stopwatch sw = Stopwatch.createStarted();
+                Object[] array = rows.toArray();
+                System.out.println("Array created in " + sw);
+                sw.reset().start();
+                context.getRequest()
+                        .getSortModel()
+                        .stream()
+                        .map(this::comparator2)
+                        .reduce(Comparator::thenComparing)
+                        .ifPresent(cmp -> Arrays.parallelSort(array, (Comparator<Object>) cmp));
+                System.out.println("Array sorted in " + sw);*/
+                return context.createResponse(
+                        limit2(sort2(rows))
+                                .map(v -> source.getTypeInfo().toMap().apply((V) v))
+                                .collect(Collectors.toList())
+                );
+                //result = convert(rows);
             }
-            return context.createResponse(limit(sort(result.peek(v -> aggregatedObjects++))));
+            return context.createResponse(limit(sort(result)));
         }
 
         private Stream<Map<String, Object>> convert(Stream<V> rows) {
@@ -92,9 +93,7 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
                     Sets.difference(filters.getNames(), source.getFilteredNames());
             final Predicate<V> predicate = filter(toFilter, filters);
             return source.stream()
-                    .peek(v -> totalObjects++)
-                    .filter(predicate)
-                    .peek(v -> filteredObjects++);
+                    .filter(predicate);
         }
 
         private Predicate<V> filter(Set<String> columns, RequestFilters filters) {
@@ -119,6 +118,16 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
                     .orElse(src);
         }
 
+        private Stream<V> sort2(Stream<V> src) {
+            return context.getRequest()
+                    .getSortModel()
+                    .stream()
+                    .map(this::comparator2)
+                    .reduce(Comparator::thenComparing)
+                    .map(src.parallel()::sorted)
+                    .orElse(src);
+        }
+
         private Comparator<Map<String, Object>> comparator(SortModel sortModel) {
             Comparator<Map<String, Object>> comparator = Comparator.comparing(
                     MapUtils.extractValue(sortModel.getColId()),
@@ -128,6 +137,20 @@ public final class ObjectSourceBasedAgGridRowSource<V> implements AgGridRowSourc
                 comparator = comparator.reversed();
             }
             return nullsFirst(comparator);
+        }
+
+        private Comparator<V> comparator2(SortModel sortModel) {
+            final TypeInfo<V> typeInfo = source.getTypeInfo();
+            Comparator<V> comparator = typeInfo.getAttribute(sortModel.getColId()).getComparator();
+            if (Sorting.ASC != sortModel.getSort()) {
+                comparator = comparator.reversed();
+            }
+            return nullsFirst(comparator);
+        }
+
+        private <T> Stream<T> limit2(Stream<T> src) {
+            return src.skip(context.getRequest().getStartRow())
+                    .limit(context.getRequest().getEndRow() + 1);
         }
 
         private <T> List<T> limit(Stream<T> src) {
