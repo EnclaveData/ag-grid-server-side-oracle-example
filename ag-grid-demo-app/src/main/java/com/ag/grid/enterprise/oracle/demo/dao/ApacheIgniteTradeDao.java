@@ -29,9 +29,9 @@ import static com.ag.grid.enterprise.oracle.demo.builder.EnterpriseResponseBuild
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
 
-@Repository("oracleTradeDao")
+@Repository("igniteTradeDao")
 @Lazy
-public class OracleTradeDao implements TradeDao {
+public class ApacheIgniteTradeDao implements TradeDao {
 
     private static final int PIVOT_VALUES_GLOBAL_LIMIT = 100;
 
@@ -61,7 +61,7 @@ public class OracleTradeDao implements TradeDao {
             .build();
 
     @Autowired
-    public OracleTradeDao(@Qualifier("jdbcTemplate") JdbcTemplate template) {
+    public ApacheIgniteTradeDao(@Qualifier("igniteJdbcTemplate") JdbcTemplate template) {
         this.template = template;
         queryBuilder = new OracleSqlQueryBuilder();
 
@@ -71,7 +71,7 @@ public class OracleTradeDao implements TradeDao {
     @PostConstruct
     private void init() throws SQLException {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
-        DataSource dataSource = template.getDataSource();
+        final DataSource dataSource = template.getDataSource();
         if (dataSource == null) {
             throw new IllegalStateException("No data source!");
         }
@@ -130,7 +130,6 @@ public class OracleTradeDao implements TradeDao {
                 .map(m ->
                         m.entrySet()
                                 .stream()
-                                .filter(e -> e.getValue() != null)
                                 .collect(toMap(
                                         e -> fixMap.getOrDefault(e.getKey(), e.getKey()),
                                         Map.Entry::getValue

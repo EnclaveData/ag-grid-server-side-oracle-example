@@ -22,7 +22,7 @@ public class TradeController {
     private final TradeDao tradeDao;
 
     @Autowired
-    public TradeController(@Qualifier("mapBasedTradeDao") TradeDao tradeDao) {
+    public TradeController(@Qualifier("oracleTradeDao") TradeDao tradeDao) {
         this.tradeDao = tradeDao;
     }
 

@@ -25,7 +25,7 @@ public class EnterpriseResponseBuilder {
 
         List<ColumnVO> valueColumns = request.getValueCols();
 
-        return new AgGridGetRowsResponse(rows, lastRow, getSecondaryColumns(pivotValues, valueColumns));
+        return new AgGridGetRowsResponse<>(rows, lastRow, getSecondaryColumns(pivotValues, valueColumns));
     }
 
     private static List<String> getSecondaryColumns(Map<String, List<String>> pivotValues, List<ColumnVO> valueColumns) {

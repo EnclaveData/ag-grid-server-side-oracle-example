@@ -93,7 +93,7 @@ public class OracleSqlQueryBuilder {
                     .collect(toList());
         }
 
-        return isGrouping ? "SELECT " + join(", ", selectCols) : "SELECT *";
+        return isGrouping || (isPivotMode && !pivotColumns.isEmpty()) ? "SELECT " + join(", ", selectCols) : "SELECT *";
     }
 
     private String fromSql(String tableName) {
