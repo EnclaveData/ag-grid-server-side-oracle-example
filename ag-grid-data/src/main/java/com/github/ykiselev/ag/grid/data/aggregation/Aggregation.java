@@ -69,15 +69,7 @@ public final class Aggregation {
      */
     public static <V> Stream<Map<String, Object>> groupBy(Stream<V> input, Context context, TypeInfo<V> typeInfo) {
         return new Aggregation(context)
-                .parse(input.collect(create(context, typeInfo)));
-    }
-
-    private Stream<Map<String, Object>> parse(Map<?, ?> rawResult) {
-        if (rawResult == null) {
-            throw new NullPointerException("result");
-        }
-        return expandGroup(0, rawResult)
-                .flatMap(this::addSecondaryColumns);
+                .expandGroup(null, 0, input.collect(create(context, typeInfo)));
     }
 
     /**
@@ -101,33 +93,8 @@ public final class Aggregation {
      *     { A=a2, B=b1, V=v3},
      *     { A=a2, B=b2, V=v4}
      * </pre>
-     *
-     * @param index the group column index
-     * @param map   the result map
-     * @return the stream of expanded groups
-     */
-    private Stream<Map<?, ?>> expandGroup(int index, Map<?, ?> map) {
-        final List<String> groupByColumns = context.getGroupByColumns();
-        if (index < groupByColumns.size()) {
-            return map.entrySet()
-                    .stream()
-                    .flatMap(e -> expandGroup(index + 1, (Map<?, ?>) e.getValue()));
-        }
-        return Stream.of(map);
-    }
-
-    @SuppressWarnings("unchecked")
-    private Stream<Map<String, Object>> addSecondaryColumns(Map<?, ?> map) {
-        if (!context.isPivot()) {
-            return Stream.of((Map<String, Object>) map);
-        }
-        return map.entrySet()
-                .stream()
-                .map(this::treeToRows);
-    }
-
-    /**
-     * Converts (transposes) a single tree formed by values grouped by pivot column values.<p/>
+     * <p>
+     * If aggregation includes pivot columns then last group value (or the whole result map if there is no grouping columns) would be converted to single pivot row.
      * For example if we have two pivot columns A=("a1") and B=("b1","b2") and 3 value columns X,Y,Z then input entry will be a tree of maps:
      * <pre>
      *  a1
@@ -145,23 +112,41 @@ public final class Aggregation {
      * <pre>
      *   { a1_b1_x=x1, a1_b1_y=y1, a1_b1_z=z1, a1_b2_x=x2, a1_b2_y=y2, a1_b2_z=z2
      * </pre>
-     * Please note that general grouping is processed before that step.
      *
-     * @param row the map entry containing the tree to convert to rows, key is the first pivot column value, and value
-     * @return the stream of maps containing final columns with values
-     * @see Aggregation#expandGroup(int, java.util.Map)
+     * @param index the group column index
+     * @param map   the result map
+     * @return the stream of expanded groups
      */
-    private Map<String, Object> treeToRows(Map.Entry<?, ?> row) {
-        final Map<String, Object> result = new HashMap<>();
-        append(0, new Node(null, row.getKey()), row.getValue(), result);
-        return result;
+    @SuppressWarnings("unchecked")
+    private Stream<Map<String, Object>> expandGroup(GroupNode parent, int index, Map<?, ?> map) {
+        if (index < context.getGroupByColumns().size()) {
+            return map.entrySet()
+                    .stream()
+                    .flatMap(e -> expandGroup(new GroupNode(context.getGroupByColumns().get(index), e.getKey(), parent), index + 1, (Map<?, ?>) e.getValue()));
+        } else if (context.isPivot() && index - context.getGroupByColumns().size() < context.getPivotColumns().size()) {
+            final Map<String, Object> result = new HashMap<>();
+            if (parent != null) {
+                parent.add(result);
+            }
+            map.forEach((pivotColumnValue, subTree) ->
+                    append(0, new PivotNode(null, pivotColumnValue), subTree, result));
+            return Stream.of(result);
+        }
+        final Map<String, Object> result;
+        if (parent != null) {
+            result = new HashMap<>((Map<String, Object>) map);
+            parent.add(result);
+        } else {
+            result = (Map<String, Object>) map;
+        }
+        return Stream.of(result);
     }
 
-    private void append(int index, Node node, Object value, Map<String, Object> target) {
+    private void append(int index, PivotNode node, Object value, Map<String, Object> target) {
         final int idx = index + 1;
         if (idx < context.getPivotColumns().size()) {
             ((Map<?, ?>) value).forEach((k, v) ->
-                    append(idx, new Node(node, k), v, target));
+                    append(idx, new PivotNode(node, k), v, target));
         } else {
             append(node, value, target);
         }
@@ -176,12 +161,12 @@ public final class Aggregation {
      * @see Context#addSecondaryColumns(java.util.Collection)
      */
     @SuppressWarnings("unchecked")
-    private void append(Node parent, Object value, Map<String, Object> target) {
+    private void append(PivotNode parent, Object value, Map<String, Object> target) {
         final Map<String, String> column2secondary = context.getValueColumns()
                 .stream()
                 .collect(Collectors.toMap(
                         col -> col,
-                        col -> Node.name(parent.getPath(), col)
+                        col -> PivotNode.name(parent.getPath(), col)
                 ));
         context.addSecondaryColumns(column2secondary.values());
         ((Map<String, Object>) value)
@@ -189,7 +174,30 @@ public final class Aggregation {
                         target.put(column2secondary.getOrDefault(k, k), v));
     }
 
-    private static final class Node {
+    private static final class GroupNode {
+
+        private final String name;
+
+        private final Object value;
+
+        private final GroupNode parent;
+
+        GroupNode(String name, Object value, GroupNode parent) {
+            this.name = requireNonNull(name);
+            this.value = value;
+            this.parent = parent;
+        }
+
+        void add(Map<String, Object> target) {
+            GroupNode g = this;
+            while (g != null) {
+                target.put(g.name, g.value);
+                g = g.parent;
+            }
+        }
+    }
+
+    private static final class PivotNode {
 
         private final String path;
 
@@ -197,7 +205,7 @@ public final class Aggregation {
             return path;
         }
 
-        Node(Node parent, Object key) {
+        PivotNode(PivotNode parent, Object key) {
             final String p = Objects.toString(key);
             this.path = parent != null ? name(parent.getPath(), p) : p;
         }

@@ -84,8 +84,7 @@ class AggregationTest extends Specification {
                 [
                         'a': 1,
                         'b': 8d,
-                        'c': 11L,
-                        'd': null
+                        'c': 11L
                 ]
         ] as Object[]
     }
@@ -123,22 +122,12 @@ class AggregationTest extends Specification {
         then:
         result == [
                 [
-                        'a'  : 1,
                         'x_b': 1d,
                         'x_c': 4L,
-                        'd'  : 'x',
-                ],
-                [
-                        'a'  : 1,
                         'y_b': 2d,
                         'y_c': 5L,
-                        'd'  : 'y',
-                ],
-                [
-                        'a'  : 1,
                         'z_b': 3d,
-                        'z_c': 6L,
-                        'd'  : 'z',
+                        'z_c': 6L
                 ]
         ] as Object[]
     }
