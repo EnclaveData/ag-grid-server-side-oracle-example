@@ -21,8 +21,11 @@ public class TradeController {
 
     private final TradeDao tradeDao;
 
+    /**
+     * @param tradeDao any descendant of {@link TradeDao}
+     */
     @Autowired
-    public TradeController(@Qualifier("oracleTradeDao") TradeDao tradeDao) {
+    public TradeController(@Qualifier("mapBasedTradeDao") TradeDao tradeDao) {
         this.tradeDao = tradeDao;
     }
 

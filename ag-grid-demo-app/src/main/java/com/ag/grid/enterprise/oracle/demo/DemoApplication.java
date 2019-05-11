@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -22,6 +23,7 @@ import javax.sql.DataSource;
 public class DemoApplication {
 
     @Bean
+    @Lazy
     public Ignite ignition() {
         final IgniteConfiguration configuration = new IgniteConfiguration();
         configuration.setClientMode(false);
@@ -29,12 +31,14 @@ public class DemoApplication {
     }
 
     @Bean
+    @Lazy
     @ConfigurationProperties(prefix = "ignite.datasource")
     DataSourceProperties igniteDataSourceProperties() {
         return new DataSourceProperties();
     }
 
     @Bean
+    @Lazy
     @DependsOn({"ignition"})
     public DataSource igniteDataSource() {
         final DataSource dataSource = igniteDataSourceProperties().initializeDataSourceBuilder().build();
@@ -44,6 +48,7 @@ public class DemoApplication {
     }
 
     @Bean
+    @Lazy
     public JdbcTemplate igniteJdbcTemplate() {
         return new JdbcTemplate(igniteDataSource());
     }
@@ -51,18 +56,21 @@ public class DemoApplication {
     @Bean
     @Primary
     @ConfigurationProperties(prefix = "spring.datasource")
+    @Lazy
     DataSourceProperties dataSourceProperties() {
         return new DataSourceProperties();
     }
 
     @Bean
     @Primary
+    @Lazy
     public DataSource dataSource() {
         final DataSource dataSource = dataSourceProperties().initializeDataSourceBuilder().build();
         return dataSource;
     }
 
     @Bean
+    @Lazy
     public JdbcTemplate jdbcTemplate() {
         return new JdbcTemplate(dataSource());
     }

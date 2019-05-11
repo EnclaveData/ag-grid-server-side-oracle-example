@@ -57,7 +57,7 @@ public final class TradeDumpGeneratorApp {
         int i = 1, p = 1;
         while (left > minSize && (maxSize / minSize) > 1_000) {
             final int size = maxSize;
-            final String portfolio = "portfolio_" + p;
+            final String portfolio = "portfolio#" + p;
             final Map<Long, Trade> trades = createPortfolio(portfolio, i, size);
             map.put(portfolio, trades);
             left -= size;
@@ -67,7 +67,7 @@ public final class TradeDumpGeneratorApp {
         }
         while (left > minSize) {
             final int size = rnd.nextInt(minSize, Math.min(maxSize, left));
-            final String portfolio = "portfolio_" + p;
+            final String portfolio = "portfolio#" + p;
             final Map<Long, Trade> trades = createPortfolio(portfolio, i, size);
             map.put(portfolio, trades);
             left -= size;
@@ -84,12 +84,12 @@ public final class TradeDumpGeneratorApp {
             Trade t = new Trade();
             t.setTradeId(fromId + i);
             t.setPortfolio(portfolio);
-            t.setProduct("product_" + rnd.nextInt(1, 100));
-            t.setBook("book_" + rnd.nextInt(1, 5_000));
+            t.setProduct("product#" + rnd.nextInt(1, 100));
+            t.setBook("book#" + rnd.nextInt(1, 5_000));
             t.setSubmitterId(rnd.nextInt(1, 3_000));
             t.setSubmitterDealId(i);
-            t.setDealType("dealType_" + rnd.nextInt(1, 50));
-            t.setBidType("bidType_" + rnd.nextInt(1, 250));
+            t.setDealType("dealType#" + rnd.nextInt(1, 50));
+            t.setBidType("bidType#" + rnd.nextInt(1, 250));
             t.setCurrentValue(rnd.nextDouble(0, 1_000_000));
             t.setPreviousValue(rnd.nextDouble(0, 1_100_000));
             t.setPl1(rnd.nextDouble());

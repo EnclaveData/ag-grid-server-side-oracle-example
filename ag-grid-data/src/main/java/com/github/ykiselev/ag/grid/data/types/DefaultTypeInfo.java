@@ -54,11 +54,19 @@ public final class DefaultTypeInfo<V> implements TypeInfo<V> {
     }
 
     @Override
-    public Function<V, Map<String, Object>> toMap() {
+    public Function<V, Map<String, Object>> toMap(Collection<String> names) {
         return value -> {
             final Map<String, Object> result = mapFactory.get();
-            attributes.forEach((name, attr) ->
-                    result.put(name, attr.getObjectGetter().apply(value)));
+            final Collection<String> namesTiUse;
+            if (names.isEmpty()) {
+                namesTiUse = attributes.keySet();
+            } else {
+                namesTiUse = names;
+            }
+            namesTiUse.stream()
+                    .map(attributes::get)
+                    .forEach(attr ->
+                            result.put(attr.getName(), attr.getObjectGetter().apply(value)));
             return result;
         };
     }

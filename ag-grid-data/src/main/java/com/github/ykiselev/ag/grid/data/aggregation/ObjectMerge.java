@@ -6,6 +6,7 @@ import com.github.ykiselev.ag.grid.data.types.TypeInfo;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.DoubleBinaryOperator;
@@ -409,7 +410,7 @@ final class ObjectMerge {
             if (first == null) {
                 return Collections.emptyMap();
             }
-            final Map<String, Object> result = toMap.apply(first);
+            final Map<String, Object> result = new HashMap<>();// toMap.apply(first);
             for (Accumulator<V> aggregator : accumulators) {
                 aggregator.finish(counter, result);
             }

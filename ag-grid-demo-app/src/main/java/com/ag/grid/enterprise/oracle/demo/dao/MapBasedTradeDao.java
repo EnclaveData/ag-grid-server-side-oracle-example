@@ -110,25 +110,6 @@ public class MapBasedTradeDao implements TradeDao, AutoCloseable {
         logger.info("Done!");
     }
 
-    private Comparator<Object[]> comparator(String name, Sorting sorting) {
-        Comparator<Object[]> comparator = tupleTypeInfo.getAttribute(name).getComparator();
-        if (Sorting.ASC != sorting) {
-            comparator = comparator.reversed();
-        }
-        return nullsFirst(comparator);
-    }
-
-    private Comparator<Map<String, Object>> mapComparator(SortModel sortModel) {
-        Comparator<Map<String, Object>> comparator = Comparator.comparing(
-                MapUtils.extractValue(sortModel.getColId()),
-                nullsFirst(naturalOrder())
-        );
-        if (Sorting.ASC != sortModel.getSort()) {
-            comparator = comparator.reversed();
-        }
-        return nullsFirst(comparator);
-    }
-
     @Override
     public void close() {
     }
