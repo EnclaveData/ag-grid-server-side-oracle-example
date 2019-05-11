@@ -5,14 +5,12 @@ import com.ag.grid.enterprise.oracle.demo.ItemMapFactory;
 import com.ag.grid.enterprise.oracle.demo.domain.Trade;
 import com.ag.grid.enterprise.oracle.demo.domain.TradeTypeInfoFactory;
 import com.github.ykiselev.ag.grid.api.request.AgGridGetRowsRequest;
-import com.github.ykiselev.ag.grid.api.request.SortModel;
-import com.github.ykiselev.ag.grid.api.request.Sorting;
 import com.github.ykiselev.ag.grid.api.response.AgGridGetRowsResponse;
 import com.github.ykiselev.ag.grid.data.AgGridRowSource;
 import com.github.ykiselev.ag.grid.data.FilteredObjectSource;
 import com.github.ykiselev.ag.grid.data.ListBasedAgGridRowSource;
+import com.github.ykiselev.ag.grid.data.ObjectSourceBasedAgGridRowSource;
 import com.github.ykiselev.ag.grid.data.RequestFilters;
-import com.github.ykiselev.ag.grid.data.common.MapUtils;
 import com.github.ykiselev.ag.grid.data.types.DefaultTypeInfo;
 import com.github.ykiselev.ag.grid.data.types.TupleAttribute;
 import com.github.ykiselev.ag.grid.data.types.TypeInfo;
@@ -25,38 +23,28 @@ import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static java.util.Comparator.naturalOrder;
-import static java.util.Comparator.nullsFirst;
 import static java.util.Objects.requireNonNull;
 
-@Repository("mapBasedTradeDao")
+@Repository("inMemoryTupleBasedTradeDao")
 @Lazy
-public class MapBasedTradeDao implements TradeDao, AutoCloseable {
+public class InMemoryTupleBasedTradeDao implements TradeDao, AutoCloseable {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final List<Object[]> trades = new ArrayList<>();
 
-    private final List<Trade> originalTrades = new ArrayList<>();
-
     private final TypeInfo<Object[]> tupleTypeInfo;
-
-    private final TypeInfo<Trade> typeInfo;
 
     private final AgGridRowSource rowSource;
 
-    public MapBasedTradeDao() {
-        typeInfo = TradeTypeInfoFactory.create();
-
-        this.rowSource = new ListBasedAgGridRowSource<>(originalTrades, typeInfo);
-
-        tupleTypeInfo = new DefaultTypeInfo<>(Arrays.asList(
+    public InMemoryTupleBasedTradeDao() {
+        this.rowSource = new ObjectSourceBasedAgGridRowSource<>(FilteredTradeSource::new);
+        this.tupleTypeInfo = new DefaultTypeInfo<>(Arrays.asList(
                 new TupleAttribute("product", String.class, 0),
                 new TupleAttribute("portfolio", String.class, 1),
                 new TupleAttribute("book", String.class, 2),
@@ -86,7 +74,6 @@ public class MapBasedTradeDao implements TradeDao, AutoCloseable {
                 .flatMap(m -> m.entrySet().stream())
                 .map(e -> {
                     final Trade trade = e.getValue();
-                    originalTrades.add(trade);
                     final Object[] tuple = new Object[16];
                     int i = 0;
                     tuple[i++] = trade.getProduct();

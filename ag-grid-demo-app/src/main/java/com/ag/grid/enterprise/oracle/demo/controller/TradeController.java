@@ -25,7 +25,7 @@ public class TradeController {
      * @param tradeDao any descendant of {@link TradeDao}
      */
     @Autowired
-    public TradeController(@Qualifier("mapBasedTradeDao") TradeDao tradeDao) {
+    public TradeController(@Qualifier("databaseTradeDao") TradeDao tradeDao) {
         this.tradeDao = tradeDao;
     }
 

@@ -1,6 +1,8 @@
 package com.ag.grid.enterprise.oracle.demo.dao;
 
+import com.ag.grid.enterprise.TradeDumpLoader;
 import com.ag.grid.enterprise.oracle.demo.builder.OracleSqlQueryBuilder;
+import com.ag.grid.enterprise.oracle.demo.domain.Trade;
 import com.github.ykiselev.ag.grid.api.request.AgGridGetRowsRequest;
 import com.github.ykiselev.ag.grid.api.request.ColumnVO;
 import com.github.ykiselev.ag.grid.api.response.AgGridGetRowsResponse;
@@ -22,16 +24,15 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static com.ag.grid.enterprise.oracle.demo.builder.EnterpriseResponseBuilder.createResponse;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
 
-@Repository("oracleTradeDao")
+@Repository("databaseTradeDao")
 @Lazy
-public class OracleTradeDao implements TradeDao {
+public class DatabaseTradeDao implements TradeDao {
 
     private static final int PIVOT_VALUES_GLOBAL_LIMIT = 100;
 
@@ -61,7 +62,7 @@ public class OracleTradeDao implements TradeDao {
             .build();
 
     @Autowired
-    public OracleTradeDao(@Qualifier("jdbcTemplate") JdbcTemplate template) {
+    public DatabaseTradeDao(@Qualifier("jdbcTemplate") JdbcTemplate template) {
         this.template = template;
         queryBuilder = new OracleSqlQueryBuilder();
 
@@ -70,8 +71,10 @@ public class OracleTradeDao implements TradeDao {
 
     @PostConstruct
     private void init() throws SQLException {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-        DataSource dataSource = template.getDataSource();
+        logger.info("Loading data...");
+        final Map<String, Map<Long, Trade>> map = TradeDumpLoader.load();
+
+        final DataSource dataSource = template.getDataSource();
         if (dataSource == null) {
             throw new IllegalStateException("No data source!");
         }
@@ -83,29 +86,38 @@ public class OracleTradeDao implements TradeDao {
                             "gainDx,sxPx,x99Out,batch)" +
                             "values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
             )) {
-                for (int i = 0; i < 1_000_000; i++) {
-                    ps.clearParameters();
-                    ps.setString(1, "product#" + (i % 100));
-                    ps.setString(2, "portfolio#" + (i % 1500));
-                    ps.setString(3, "book#" + (i % 5000));
-                    ps.setInt(4, i);
-                    ps.setInt(5, i % 3000);
-                    ps.setInt(6, i);
-                    ps.setString(7, "dealType#" + (i % 35));
-                    ps.setString(8, rnd.nextBoolean() ? "Buy" : "Sell");
-                    ps.setDouble(9, rnd.nextDouble(0, 100_000));
-                    ps.setDouble(10, rnd.nextDouble(0, 100_000));
-                    ps.setDouble(11, rnd.nextDouble());
-                    ps.setDouble(12, rnd.nextDouble());
-                    ps.setDouble(13, rnd.nextDouble());
-                    ps.setDouble(14, rnd.nextDouble());
-                    ps.setDouble(15, rnd.nextDouble());
-                    ps.setInt(16, i % 15000);
-                    ps.addBatch();
-                    if (i % 5_0000 == 0) {
-                        ps.executeBatch();
-                    }
-                }
+                final int[] counter = new int[1];
+                map.values().stream()
+                        .flatMap(m -> m.values().stream())
+                        .forEach(trade -> {
+                            final int i = counter[0];
+                            try {
+                                ps.clearParameters();
+                                ps.setString(1, trade.getProduct());
+                                ps.setString(2, trade.getPortfolio());
+                                ps.setString(3, trade.getBook());
+                                ps.setLong(4, trade.getTradeId());
+                                ps.setLong(5, trade.getSubmitterId());
+                                ps.setLong(6, trade.getSubmitterDealId());
+                                ps.setString(7, trade.getDealType());
+                                ps.setString(8, trade.getBidType());
+                                ps.setDouble(9, trade.getCurrentValue());
+                                ps.setDouble(10, trade.getPreviousValue());
+                                ps.setDouble(11, trade.getPl1());
+                                ps.setDouble(12, trade.getPl2());
+                                ps.setDouble(13, trade.getGainDx());
+                                ps.setDouble(14, trade.getSxPx());
+                                ps.setDouble(15, trade.getX99Out());
+                                ps.setLong(16, trade.getBatch());
+                                ps.addBatch();
+                                if (i % 5_0000 == 0) {
+                                    ps.executeBatch();
+                                }
+                            } catch (SQLException e) {
+                                throw new RuntimeException(e);
+                            }
+                            counter[0]++;
+                        });
             }
         }
     }
